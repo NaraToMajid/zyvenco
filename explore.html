@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jelajahi — Zyvenqo</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.explore-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1rem}
+.explore-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;cursor:pointer;transition:border-color .2s,transform .2s;display:flex;flex-direction:column;gap:.65rem}
+.explore-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+        <h2 style="font-size:1.1rem">Jelajahi</h2>
+      </div>
+      <div class="topbar-right">
+        <div class="search-bar">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="search-inp" placeholder="Cari proyek atau user..." oninput="doSearch(this.value)" style="width:220px">
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs mb-3">
+      <button class="tab active" onclick="switchTab('projects',this)">Proyek</button>
+      <button class="tab" onclick="switchTab('users',this)">Pengguna</button>
+    </div>
+
+    <div id="projects-section">
+      <div class="explore-grid" id="explore-grid">
+        <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span></div>
+      </div>
+    </div>
+    <div id="users-section" style="display:none">
+      <div class="explore-grid" id="users-grid">
+        <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast-container"></div>
+<script type="module">
+import { buildSidebar, initTheme, Auth, db, timeAgo, avatarHTML } from './app.js';
+initTheme();
+const u = Auth.current();
+buildSidebar('explore');
+
+let tab='projects';
+
+async function loadProjects(q=''){
+  const grid=document.getElementById('explore-grid');
+  grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span></div>';
+  let query=db.from('projects_Zyven').select('*,users_Zyven(username,display_name,avatar_url)').eq('visibility','public').order('stars',{ascending:false}).limit(30);
+  if(q) query=query.ilike('name','%'+q+'%');
+  const {data}=await query;
+  if(!data||!data.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><i class="fa-solid fa-folder-open"></i><p>Tidak ada proyek</p></div>';return;}
+  grid.innerHTML=data.map(p=>`
+    <div class="explore-card" onclick="location.href='project.html?id=${p.id}'">
+      <div class="flex justify-between items-center">
+        <span style="font-weight:700;font-size:.9rem"><i class="fa-solid fa-folder" style="color:var(--accent3);margin-right:.35rem"></i>${p.name}</span>
+        <div class="flex items-center gap-1">
+          ${avatarHTML(p.users_Zyven||{},'sm')}
+        </div>
+      </div>
+      ${p.description?`<p style="font-size:.8rem;color:var(--text3)">${p.description}</p>`:''}
+      <div class="flex gap-2" style="font-size:.78rem;color:var(--text3)">
+        <span><i class="fa-solid fa-star"></i> ${p.stars||0}</span>
+        <span><i class="fa-solid fa-eye"></i> ${p.views||0}</span>
+        <span style="margin-left:auto">@${p.users_Zyven?.username||'?'}</span>
+        <span>${timeAgo(p.updated_at)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadUsers(q=''){
+  const grid=document.getElementById('users-grid');
+  grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span></div>';
+  let query=db.from('users_Zyven').select('id,username,display_name,bio,avatar_url').eq('status','active').neq('role','admin').order('created_at',{ascending:false}).limit(30);
+  if(q) query=query.ilike('username','%'+q+'%');
+  const {data}=await query;
+  if(!data||!data.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><i class="fa-solid fa-users"></i><p>Tidak ada pengguna</p></div>';return;}
+  grid.innerHTML=data.map(usr=>`
+    <div class="explore-card" onclick="location.href='profile.html?id=${usr.id}'">
+      <div class="flex items-center gap-2">
+        ${avatarHTML(usr,'md')}
+        <div>
+          <div style="font-weight:700">${usr.display_name||usr.username}</div>
+          <div style="font-size:.78rem;color:var(--text3)">@${usr.username}</div>
+        </div>
+      </div>
+      ${usr.bio?`<p style="font-size:.82rem;color:var(--text3)">${usr.bio}</p>`:''}
+      ${u?`<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();location.href='messages.html'"><i class="fa-solid fa-message"></i> Pesan</button>`:''}
+    </div>
+  `).join('');
+}
+
+window.switchTab=function(t,el){
+  tab=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('projects-section').style.display=t==='projects'?'':'none';
+  document.getElementById('users-section').style.display=t==='users'?'':'none';
+  if(t==='projects') loadProjects(document.getElementById('search-inp').value);
+  else loadUsers(document.getElementById('search-inp').value);
+};
+
+window.doSearch=function(q){
+  if(tab==='projects') loadProjects(q);
+  else loadUsers(q);
+};
+
+loadProjects();
+</script>
+</body>
+</html>
