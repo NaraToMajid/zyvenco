@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesan — Zyvenqo</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.msg-layout{display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 120px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.contact-panel{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.contact-header{padding:.85rem;border-bottom:1px solid var(--border)}
+.contact-list{flex:1;overflow-y:auto}
+.contact-item{display:flex;align-items:center;gap:.65rem;padding:.7rem .85rem;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border)}
+.contact-item:hover{background:var(--card)}
+.contact-item.active{background:rgba(108,99,255,.1)}
+.contact-name{font-size:.875rem;font-weight:600}
+.contact-preview{font-size:.78rem;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+.chat-area{display:flex;flex-direction:column;overflow:hidden}
+.chat-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);background:var(--card2);display:flex;align-items:center;gap:.75rem}
+@media(max-width:700px){.msg-layout{grid-template-columns:1fr}.contact-panel{display:none}.contact-panel.show{display:flex}.chat-area{display:none}.chat-area.show{display:flex}}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+        <h2 style="font-size:1.1rem">Pesan</h2>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="newMessage()"><i class="fa-solid fa-pen"></i> Pesan Baru</button>
+      </div>
+    </div>
+
+    <div class="msg-layout">
+      <!-- CONTACTS -->
+      <div class="contact-panel" id="contact-panel">
+        <div class="contact-header">
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="contact-search" placeholder="Cari pengguna..." oninput="searchContacts(this.value)">
+          </div>
+        </div>
+        <div class="contact-list" id="contact-list">
+          <div class="empty-state"><i class="fa-solid fa-user"></i><p>Belum ada percakapan</p></div>
+        </div>
+      </div>
+
+      <!-- CHAT AREA -->
+      <div class="chat-area" id="chat-area">
+        <div id="chat-header-area" style="display:none" class="chat-header">
+          <div id="chat-with-avatar"></div>
+          <div>
+            <div id="chat-with-name" style="font-weight:700;font-size:.9rem"></div>
+            <div style="font-size:.75rem;color:var(--text3)">@<span id="chat-with-user"></span></div>
+          </div>
+        </div>
+        <div id="chat-empty-state" style="display:flex;align-items:center;justify-content:center;flex:1;color:var(--text3)">
+          <div class="text-center"><i class="fa-solid fa-message" style="font-size:2rem;margin-bottom:.75rem"></i><p>Pilih percakapan</p></div>
+        </div>
+        <div class="chat-messages" id="chat-messages" style="display:none"></div>
+        <div class="chat-input-row" id="chat-input-row" style="display:none">
+          <label class="btn btn-ghost btn-icon" for="msg-img-input" title="Kirim gambar"><i class="fa-solid fa-image"></i></label>
+          <input type="file" id="msg-img-input" accept="image/*" style="display:none" onchange="sendImage(this)">
+          <textarea class="inp" id="msg-input" placeholder="Tulis pesan..." rows="1" onkeydown="msgKeydown(event)"></textarea>
+          <button class="btn btn-primary btn-icon" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast-container"></div>
+
+<script type="module">
+import { buildSidebar, initTheme, toast, Auth, db, timeAgo, linkify, openModal, closeModal, avatarHTML, uploadFile } from './app.js';
+initTheme();
+const u = Auth.requireAuth();
+if(!u) throw new Error();
+buildSidebar('messages');
+
+let currentPeer = null;
+let sub = null;
+let contacts = [];
+
+async function loadContacts() {
+  const { data } = await db.from('messages_Zyven')
+    .select('sender_id, receiver_id')
+    .or(`sender_id.eq.${u.id},receiver_id.eq.${u.id}`)
+    .order('created_at', { ascending: false });
+
+  const peerIds = [...new Set((data||[]).map(m => m.sender_id === u.id ? m.receiver_id : m.sender_id))];
+  if (!peerIds.length) return;
+
+  const { data: users } = await db.from('users_Zyven').select('id,username,display_name,avatar_url').in('id', peerIds);
+  contacts = users || [];
+  renderContacts(contacts);
+}
+loadContacts();
+
+function renderContacts(list) {
+  const cl = document.getElementById('contact-list');
+  if (!list.length) {
+    cl.innerHTML = `<div class="empty-state"><i class="fa-solid fa-user"></i><p>Belum ada percakapan</p></div>`;
+    return;
+  }
+  cl.innerHTML = list.map(c => `
+    <div class="contact-item ${currentPeer?.id===c.id?'active':''}" onclick="openChat('${c.id}')">
+      ${avatarHTML(c,'sm')}
+      <div style="flex:1;min-width:0">
+        <div class="contact-name">${c.display_name||c.username}</div>
+        <div class="contact-preview">@${c.username}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.openChat = async function(peerId) {
+  const { data: peer } = await db.from('users_Zyven').select('*').eq('id', peerId).single();
+  if (!peer) return;
+  currentPeer = peer;
+
+  document.getElementById('chat-empty-state').style.display = 'none';
+  document.getElementById('chat-messages').style.display = 'flex';
+  document.getElementById('chat-input-row').style.display = 'flex';
+  document.getElementById('chat-header-area').style.display = 'flex';
+  document.getElementById('chat-with-avatar').innerHTML = avatarHTML(peer,'md');
+  document.getElementById('chat-with-name').textContent = peer.display_name||peer.username;
+  document.getElementById('chat-with-user').textContent = peer.username;
+
+  renderContacts(contacts);
+  // Mark as read
+  await db.from('messages_Zyven').update({is_read:true}).eq('sender_id',peerId).eq('receiver_id',u.id);
+
+  await loadMessages();
+
+  // Realtime
+  if(sub) sub.unsubscribe();
+  sub = db.channel('dm-'+peerId+'-'+u.id)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages_Zyven',
+      filter:`receiver_id=eq.${u.id}`},payload=>{
+      if(payload.new.sender_id===peerId) appendMessage(payload.new,false);
+    }).subscribe();
+};
+
+async function loadMessages() {
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = '<div style="text-align:center;padding:1rem"><span class="spinner"></span></div>';
+  const { data } = await db.from('messages_Zyven')
+    .select('*')
+    .or(`and(sender_id.eq.${u.id},receiver_id.eq.${currentPeer.id}),and(sender_id.eq.${currentPeer.id},receiver_id.eq.${u.id})`)
+    .order('created_at', { ascending: true })
+    .limit(100);
+  msgs.innerHTML = '';
+  (data||[]).forEach(m => appendMessage(m, m.sender_id===u.id));
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendMessage(m, own) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${own?'own':''}`;
+  let content = '';
+  if(m.message_type==='image'){
+    content = `<img src="${m.media_url}" class="msg-img" onclick="window.open('${m.media_url}','_blank')">`;
+  } else {
+    content = `<div class="msg-bubble">${linkify(m.content)}</div>`;
+  }
+  div.innerHTML = `
+    ${own?'':avatarHTML(currentPeer,'sm')}
+    <div>
+      ${content}
+      <div class="msg-meta">${timeAgo(m.created_at)}</div>
+    </div>
+    ${own?avatarHTML(u,'sm'):''}
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+window.sendMessage = async function() {
+  if(!currentPeer) return;
+  const inp=document.getElementById('msg-input');
+  const txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  const {data}=await db.from('messages_Zyven').insert({sender_id:u.id,receiver_id:currentPeer.id,content:txt,message_type:'text'}).select().single();
+  if(data) appendMessage(data,true);
+  if(!contacts.find(c=>c.id===currentPeer.id)){contacts.unshift(currentPeer);renderContacts(contacts);}
+};
+
+window.msgKeydown=function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}};
+
+window.sendImage=async function(inp){
+  if(!inp.files[0]||!currentPeer) return;
+  const url=await uploadFile('messages',`${u.id}/${Date.now()}_${inp.files[0].name}`,inp.files[0]);
+  if(url){
+    const {data}=await db.from('messages_Zyven').insert({sender_id:u.id,receiver_id:currentPeer.id,content:'',message_type:'image',media_url:url}).select().single();
+    if(data) appendMessage(data,true);
+  }
+  inp.value='';
+};
+
+window.searchContacts=async function(q){
+  if(!q.trim()){renderContacts(contacts);return;}
+  const {data}=await db.from('users_Zyven').select('id,username,display_name,avatar_url').ilike('username','%'+q+'%').neq('id',u.id).limit(10);
+  renderContacts(data||[]);
+};
+
+window.newMessage=function(){
+  openModal(`
+    <div class="modal-header"><h3><i class="fa-solid fa-pen"></i> Pesan Baru</h3>
+      <button class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="form-group mb-2"><label>Cari Pengguna</label>
+      <input class="inp" id="nm-search" placeholder="Cari username..." oninput="searchForNew(this.value)">
+    </div>
+    <div id="nm-results"></div>
+  `);
+};
+
+window.searchForNew=async function(q){
+  if(!q.trim()){document.getElementById('nm-results').innerHTML='';return;}
+  const {data}=await db.from('users_Zyven').select('id,username,display_name,avatar_url').ilike('username','%'+q+'%').neq('id',u.id).eq('status','active').limit(8);
+  const el=document.getElementById('nm-results');
+  el.innerHTML=(data||[]).map(c=>`
+    <div class="contact-item" onclick="closeModal();openChat('${c.id}')" style="border-radius:var(--radius2);border:1px solid var(--border);margin-bottom:.4rem">
+      ${avatarHTML(c,'sm')}
+      <div><div style="font-weight:600;font-size:.875rem">${c.display_name||c.username}</div><div style="font-size:.78rem;color:var(--text3)">@${c.username}</div></div>
+    </div>
+  `).join('');
+};
+</script>
+</body>
+</html>
