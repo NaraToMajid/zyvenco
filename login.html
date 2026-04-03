@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Masuk / Daftar — Zyvenqo</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    body {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: var(--bg);
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      padding: 20px;
+    }
+    .auth-wrap {
+      width: 100%; max-width: 440px;
+      position: relative;
+    }
+    .auth-logo {
+      text-align: center; margin-bottom: 28px;
+    }
+    .auth-logo a {
+      font-size: 28px; font-weight: 800; letter-spacing: -1px;
+      color: var(--text); text-decoration: none;
+    }
+    .auth-logo a span { color: var(--accent); }
+    .auth-logo .tagline { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+    .auth-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .auth-tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+    }
+    .auth-tab {
+      flex: 1; padding: 14px; text-align: center;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      color: var(--text-3); border-bottom: 2px solid transparent;
+      transition: all var(--transition); background: none; border-top: none; border-left: none; border-right: none;
+    }
+    .auth-tab.active {
+      color: var(--accent-2); border-bottom-color: var(--accent);
+      background: var(--accent-glow);
+    }
+    .auth-body { padding: 28px; }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+
+    /* Confirmation status */
+    .confirm-status {
+      text-align: center; padding: 16px 0;
+    }
+    .confirm-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin: 0 auto 16px;
+      background: var(--bg-4); border: 2px solid var(--border-2);
+      transition: all 0.5s ease;
+    }
+    .confirm-icon.pending { color: var(--warning); border-color: rgba(245,166,35,0.4); }
+    .confirm-icon.confirmed { color: var(--success); border-color: rgba(61,214,140,0.4); background: rgba(61,214,140,0.08); }
+    .confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+    .confirm-desc { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
+    .confirm-live {
+      display: flex; align-items: center; gap: 8px; justify-content: center;
+      padding: 10px 16px; border-radius: var(--radius);
+      background: var(--bg-3); border: 1px solid var(--border);
+      font-size: 13px; color: var(--text-2); margin-bottom: 20px;
+    }
+    .confirm-live.confirmed { background: rgba(61,214,140,0.08); border-color: rgba(61,214,140,0.25); color: var(--success); }
+
+    .back-warning {
+      background: rgba(255,75,75,0.08); border: 1px solid rgba(255,75,75,0.2);
+      border-radius: var(--radius-sm); padding: 10px 14px;
+      font-size: 12px; color: var(--danger); margin-top: 8px;
+      display: none;
+    }
+    #panel-back-warning.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="auth-wrap fade-in">
+    <div class="auth-logo">
+      <a href="index.html">Zyvен<span>qo</span></a>
+      <div class="tagline">Platform Kode untuk Developer</div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">
+          <i class="fa-solid fa-right-to-bracket"></i> Masuk
+        </button>
+        <button class="auth-tab" id="tab-register" onclick="switchTab('register')">
+          <i class="fa-solid fa-user-plus"></i> Daftar
+        </button>
+      </div>
+
+      <!-- LOGIN PANEL -->
+      <div class="auth-body">
+        <div class="auth-panel active" id="panel-login">
+          <div class="input-group">
+            <label class="input-label">Username</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-at"></i>
+              <input type="text" class="input" id="login-username" placeholder="username Anda" autocomplete="username"/>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" class="input" id="login-password" placeholder="password Anda" autocomplete="current-password"/>
+              <i class="fa-solid fa-eye" id="toggle-pass" style="left:auto;right:12px;cursor:pointer;pointer-events:all;" onclick="togglePass()"></i>
+            </div>
+          </div>
+          <div id="login-error" class="text-danger text-sm mb-16" style="display:none"></div>
+          <button class="btn btn-primary w-full" id="btn-login" onclick="doLogin()">
+            <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Zyvenqo
+          </button>
+          <div style="text-align:center; margin-top:16px;">
+            <span class="text-sm text-muted">Belum punya akun? </span>
+            <a href="#" class="text-sm text-accent" onclick="switchTab('register')">Daftar sekarang</a>
+          </div>
+        </div>
+
+        <!-- REGISTER PANEL -->
+        <div class="auth-panel" id="panel-register">
+          <div class="input-group">
+            <label class="input-label">Username</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-at"></i>
+              <input type="text" class="input" id="reg-username" placeholder="pilih username unik" autocomplete="username"/>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" class="input" id="reg-password" placeholder="minimal 6 karakter" autocomplete="new-password"/>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Konfirmasi Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock-open"></i>
+              <input type="password" class="input" id="reg-confirm" placeholder="ulangi password Anda" autocomplete="new-password"/>
+            </div>
+          </div>
+          <!-- CAPTCHA -->
+          <div class="captcha-box" id="captcha-box" onclick="toggleCaptcha()">
+            <div class="captcha-checkbox" id="captcha-check">
+              <i class="fa-solid fa-check" style="display:none;font-size:12px"></i>
+            </div>
+            <span class="captcha-text">Saya bukan robot</span>
+            <i class="fa-solid fa-shield-halved captcha-logo"></i>
+          </div>
+          <div id="reg-error" class="text-danger text-sm mb-16" style="display:none"></div>
+          <button class="btn btn-primary w-full" id="btn-register" onclick="doRegister()">
+            <i class="fa-solid fa-paper-plane"></i> Konfirmasi Pembuatan Akun
+          </button>
+          <div style="text-align:center; margin-top:16px;">
+            <span class="text-sm text-muted">Sudah punya akun? </span>
+            <a href="#" class="text-sm text-accent" onclick="switchTab('login')">Masuk di sini</a>
+          </div>
+        </div>
+
+        <!-- WAITING CONFIRMATION PANEL -->
+        <div class="auth-panel" id="panel-waiting">
+          <div class="confirm-status">
+            <div class="confirm-icon pending" id="confirm-icon">
+              <i class="fa-solid fa-clock" id="confirm-icon-inner"></i>
+            </div>
+            <div class="confirm-title">Menunggu Konfirmasi Admin</div>
+            <div class="confirm-desc">
+              Akun Anda sedang dikonfirmasi oleh admin demi mencegah akun bodong atau akun bot untuk masuk.
+              Penerimaan akan dikonfirmasi, secepat-cepatnya dalam kurun waktu <strong>1 menit</strong>,
+              selama-lamanya dalam kurun waktu <strong>20 menit</strong>. Mohon bersabar, jika sudah,
+              maka akun akan terdaftar dan bisa digunakan.
+            </div>
+            <div class="confirm-live" id="confirm-live">
+              <span class="realtime-dot"></span>
+              <span id="confirm-live-text">Akun Sedang Di Konfirmasi Admin...</span>
+            </div>
+            <button class="btn btn-primary w-full" id="btn-continue" onclick="doContinue()" style="display:none">
+              <i class="fa-solid fa-arrow-right"></i> Lanjutkan
+            </button>
+            <button class="btn btn-secondary w-full mt-8" id="btn-back-confirm" onclick="showBackWarning()">
+              <i class="fa-solid fa-arrow-left"></i> Kembali
+            </button>
+            <div class="back-warning" id="panel-back-warning">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              Jika Anda kembali sekarang, akun tidak dapat digunakan meskipun sudah dikonfirmasi. Apakah yakin?
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <button class="btn btn-danger btn-sm" onclick="doBack()">Ya, Kembali</button>
+                <button class="btn btn-secondary btn-sm" onclick="hideBackWarning()">Batal</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETUP PROFILE PANEL -->
+        <div class="auth-panel" id="panel-setup">
+          <div style="text-align:center; margin-bottom:24px;">
+            <div style="font-size:18px; font-weight:800; margin-bottom:6px;">Selamat Datang!</div>
+            <div class="text-muted text-sm">Lengkapi profil Anda sebelum mulai.</div>
+          </div>
+          <!-- Avatar upload -->
+          <div style="text-align:center; margin-bottom:20px;">
+            <div style="position:relative; display:inline-block;">
+              <div class="avatar avatar-xl" id="setup-avatar-preview" style="margin:0 auto; cursor:pointer;" onclick="document.getElementById('setup-avatar-input').click()">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <div style="position:absolute;bottom:0;right:0; width:28px;height:28px; background:var(--accent); border-radius:50%; display:flex;align-items:center;justify-content:center; cursor:pointer; border:2px solid var(--bg-2);" onclick="document.getElementById('setup-avatar-input').click()">
+                <i class="fa-solid fa-camera" style="font-size:11px;color:#fff"></i>
+              </div>
+            </div>
+            <input type="file" id="setup-avatar-input" accept="image/*" style="display:none" onchange="previewAvatar(this)"/>
+            <div class="text-xs text-muted mt-8">Klik untuk upload foto profil</div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Nama Tampilan</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-id-badge"></i>
+              <input type="text" class="input" id="setup-display-name" placeholder="nama yang akan ditampilkan"/>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Bio <span class="text-muted">(opsional)</span></label>
+            <textarea class="input" id="setup-bio" placeholder="Ceritakan sedikit tentang diri Anda..." rows="3"></textarea>
+          </div>
+          <div id="setup-error" class="text-danger text-sm mb-16" style="display:none"></div>
+          <button class="btn btn-primary w-full" onclick="doSetupProfile()">
+            <i class="fa-solid fa-check"></i> Simpan & Mulai Jelajahi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { supabase, registerUser, loginUser, updateUserProfile, setCurrentUser, getCurrentUser, uploadFile } from './supabase.js';
+
+    window.pendingUserId = null;
+    window.pendingUserObj = null;
+    window.captchaChecked = false;
+    window.avatarFile = null;
+    window.confirmInterval = null;
+
+    // Check URL param
+    const params = new URLSearchParams(location.search);
+    if (params.get('tab') === 'register') switchTab('register');
+
+    window.switchTab = function(tab) {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.getElementById('panel-' + tab).classList.add('active');
+    }
+
+    window.togglePass = function() {
+      const inp = document.getElementById('login-password');
+      const icon = document.getElementById('toggle-pass');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+        icon.style.cssText = 'left:auto;right:12px;cursor:pointer;pointer-events:all;position:absolute;top:50%;transform:translateY(-50%);color:var(--text-3)';
+      } else {
+        inp.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+        icon.style.cssText = 'left:auto;right:12px;cursor:pointer;pointer-events:all;position:absolute;top:50%;transform:translateY(-50%);color:var(--text-3)';
+      }
+    }
+
+    window.toggleCaptcha = function() {
+      window.captchaChecked = !window.captchaChecked;
+      const box = document.getElementById('captcha-box');
+      const check = document.getElementById('captcha-check');
+      const icon = check.querySelector('i');
+      if (window.captchaChecked) {
+        box.classList.add('checked');
+        icon.style.display = 'block';
+        check.style.background = 'var(--success)';
+        check.style.borderColor = 'var(--success)';
+      } else {
+        box.classList.remove('checked');
+        icon.style.display = 'none';
+        check.style.background = '';
+        check.style.borderColor = '';
+      }
+    }
+
+    window.doLogin = async function() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errEl = document.getElementById('login-error');
+      errEl.style.display = 'none';
+
+      if (!username || !password) { errEl.textContent = 'Isi semua kolom.'; errEl.style.display = 'block'; return; }
+
+      const btn = document.getElementById('btn-login');
+      btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Masuk...';
+
+      const { data: user, error } = await loginUser(username, password);
+
+      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Zyvenqo';
+
+      if (error || !user) {
+        errEl.textContent = 'Username atau password salah.';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (user.status === 'pending') {
+        errEl.textContent = 'Akun Anda belum dikonfirmasi oleh admin.';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (user.status === 'banned') {
+        errEl.textContent = 'Akun Anda telah diblokir. Hubungi admin.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      setCurrentUser(user);
+      showToast('Selamat datang kembali, ' + (user.display_name || user.username) + '!', 'success');
+      setTimeout(() => {
+        if (user.is_admin) { window.location.href = 'admin.html'; }
+        else { window.location.href = 'dashboard.html'; }
+      }, 800);
+    }
+
+    window.doRegister = async function() {
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirm = document.getElementById('reg-confirm').value;
+      const errEl = document.getElementById('reg-error');
+      errEl.style.display = 'none';
+
+      if (!username || !password || !confirm) { errEl.textContent = 'Isi semua kolom.'; errEl.style.display = 'block'; return; }
+      if (username.length < 3) { errEl.textContent = 'Username minimal 3 karakter.'; errEl.style.display = 'block'; return; }
+      if (/[^a-zA-Z0-9_]/.test(username)) { errEl.textContent = 'Username hanya boleh huruf, angka, dan underscore.'; errEl.style.display = 'block'; return; }
+      if (password.length < 6) { errEl.textContent = 'Password minimal 6 karakter.'; errEl.style.display = 'block'; return; }
+      if (password !== confirm) { errEl.textContent = 'Password tidak cocok.'; errEl.style.display = 'block'; return; }
+      if (!window.captchaChecked) { errEl.textContent = 'Selesaikan verifikasi captcha.'; errEl.style.display = 'block'; return; }
+
+      const btn = document.getElementById('btn-register');
+      btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Mendaftarkan...';
+
+      const { data: user, error } = await registerUser(username, password);
+
+      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Konfirmasi Pembuatan Akun';
+
+      if (error) {
+        if (error.message?.includes('unique')) { errEl.textContent = 'Username sudah digunakan.'; }
+        else { errEl.textContent = 'Gagal mendaftar: ' + error.message; }
+        errEl.style.display = 'block';
+        return;
+      }
+
+      window.pendingUserId = user.id;
+      window.pendingUserObj = user;
+
+      // Show waiting panel
+      document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
+      document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-waiting').classList.add('active');
+
+      // Start polling for confirmation
+      startPolling(user.id);
+    }
+
+    function startPolling(userId) {
+      if (window.confirmInterval) clearInterval(window.confirmInterval);
+      window.confirmInterval = setInterval(async () => {
+        const { data } = await supabase
+          .from('users_Zyvenqo')
+          .select('status')
+          .eq('id', userId)
+          .single();
+        if (data && data.status === 'active') {
+          clearInterval(window.confirmInterval);
+          // Update UI to confirmed
+          const icon = document.getElementById('confirm-icon');
+          const iconInner = document.getElementById('confirm-icon-inner');
+          const live = document.getElementById('confirm-live');
+          const liveText = document.getElementById('confirm-live-text');
+          icon.className = 'confirm-icon confirmed';
+          iconInner.className = 'fa-solid fa-circle-check';
+          live.className = 'confirm-live confirmed';
+          liveText.textContent = 'Akun Berhasil Dikonfirmasi!';
+          document.getElementById('btn-continue').style.display = 'flex';
+
+          // Update pendingUserObj
+          const { data: fullUser } = await supabase.from('users_Zyvenqo').select('*').eq('id', userId).single();
+          if (fullUser) window.pendingUserObj = fullUser;
+        }
+      }, 3000);
+    }
+
+    window.doContinue = function() {
+      if (window.confirmInterval) clearInterval(window.confirmInterval);
+      document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-setup').classList.add('active');
+      // Pre-fill display name
+      if (window.pendingUserObj) {
+        document.getElementById('setup-display-name').value = window.pendingUserObj.username;
+      }
+    }
+
+    window.showBackWarning = function() {
+      document.getElementById('panel-back-warning').classList.add('show');
+    }
+    window.hideBackWarning = function() {
+      document.getElementById('panel-back-warning').classList.remove('show');
+    }
+    window.doBack = function() {
+      if (window.confirmInterval) clearInterval(window.confirmInterval);
+      window.location.href = 'index.html';
+    }
+
+    window.previewAvatar = function(input) {
+      if (input.files && input.files[0]) {
+        window.avatarFile = input.files[0];
+        const reader = new FileReader();
+        reader.onload = e => {
+          const preview = document.getElementById('setup-avatar-preview');
+          preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    window.doSetupProfile = async function() {
+      const displayName = document.getElementById('setup-display-name').value.trim();
+      const bio = document.getElementById('setup-bio').value.trim();
+      const errEl = document.getElementById('setup-error');
+      errEl.style.display = 'none';
+
+      if (!displayName) { errEl.textContent = 'Nama tampilan tidak boleh kosong.'; errEl.style.display = 'block'; return; }
+      if (!window.pendingUserId) { window.location.href = 'login.html'; return; }
+
+      let avatarUrl = '';
+      if (window.avatarFile) {
+        const { url } = await uploadFile('zyvenqo-uploads', `avatars/${window.pendingUserId}`, window.avatarFile);
+        if (url) avatarUrl = url;
+      }
+
+      const updates = { display_name: displayName, bio, avatar_url: avatarUrl };
+      const { data: updated } = await supabase
+        .from('users_Zyvenqo')
+        .update(updates)
+        .eq('id', window.pendingUserId)
+        .select()
+        .single();
+
+      if (updated) {
+        setCurrentUser(updated);
+        showToast('Profil tersimpan! Selamat datang di Zyvenqo.', 'success');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+      }
+    }
+
+    // ENTER key on login
+    document.getElementById('login-password').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    window.showToast = function(msg, type = 'info') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info', warning: 'fa-triangle-exclamation' };
+      t.innerHTML = `<i class="fa-solid ${icons[type]}" style="color:var(--${type === 'success' ? 'success' : type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'info'})"></i> ${msg}`;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    }
+  </script>
+</body>
+</html>

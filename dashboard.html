@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — Zyvenqo</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    .welcome-card {
+      background: linear-gradient(135deg, var(--accent) 0%, #9b59b6 100%);
+      border-radius: var(--radius-lg); padding: 28px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 20px; margin-bottom: 24px; overflow: hidden; position: relative;
+    }
+    .welcome-card::before {
+      content: ''; position: absolute; right: -30px; top: -40px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: rgba(255,255,255,0.06); pointer-events: none;
+    }
+    .welcome-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .welcome-sub { font-size: 14px; color: rgba(255,255,255,0.75); }
+
+    .activity-feed { display: flex; flex-direction: column; gap: 0; }
+    .activity-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item:hover { background: var(--bg-3); }
+    .activity-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <div class="main-content">
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fa-solid fa-bars"></i></button>
+        <div class="topbar-search">
+          <div class="input-with-icon">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" class="input" placeholder="Cari proyek, developer..." id="search-input" oninput="handleSearch(this.value)"/>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="topbar-icon-btn" onclick="toggleTheme()" title="Ganti tema">
+            <i class="fa-solid fa-moon" id="theme-icon"></i>
+          </button>
+          <div class="dropdown" style="position:relative">
+            <button class="topbar-icon-btn" id="notif-btn">
+              <i class="fa-solid fa-bell"></i>
+              <span class="notification-dot" style="display:none"></span>
+            </button>
+            <div class="notif-panel" id="notif-panel" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:320px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);z-index:200;overflow-y:auto;max-height:400px;"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-new-project">
+            <i class="fa-solid fa-plus"></i> Baru
+          </button>
+        </div>
+      </div>
+
+      <div class="page-content">
+        <!-- WELCOME CARD -->
+        <div class="welcome-card">
+          <div>
+            <div class="welcome-title" id="welcome-title">Selamat datang!</div>
+            <div class="welcome-sub">Mulai buat atau jelajahi proyek hari ini.</div>
+          </div>
+          <div style="position:relative;z-index:1">
+            <button class="btn" style="background:rgba(255,255,255,0.2);color:#fff;backdrop-filter:blur(4px);" onclick="openNewProjectModal()">
+              <i class="fa-solid fa-folder-plus"></i> Buat Proyek
+            </button>
+          </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(108,99,255,0.1);"><i class="fa-solid fa-folder" style="color:var(--accent-2)"></i></div>
+            <div class="stat-value" id="stat-my-projects">—</div>
+            <div class="stat-label">Proyek Saya</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(245,166,35,0.1);"><i class="fa-solid fa-star" style="color:var(--warning)"></i></div>
+            <div class="stat-value" id="stat-stars">—</div>
+            <div class="stat-label">Total Bintang</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(61,214,140,0.1);"><i class="fa-solid fa-users" style="color:var(--success)"></i></div>
+            <div class="stat-value" id="stat-followers">—</div>
+            <div class="stat-label">Pengikut</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(59,179,255,0.1);"><i class="fa-solid fa-file-code" style="color:var(--info)"></i></div>
+            <div class="stat-value" id="stat-files">—</div>
+            <div class="stat-label">Total File</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;" id="main-grid">
+          <!-- MY PROJECTS -->
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Proyek Saya</div>
+                  <div class="card-subtitle" id="projects-count">Memuat...</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="openNewProjectModal()">
+                  <i class="fa-solid fa-plus"></i> Baru
+                </button>
+              </div>
+              <div id="my-projects-list">
+                <div class="empty-state">
+                  <div class="spinner"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIDEBAR WIDGETS -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <!-- Recent public activity -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Aktifitas Terbaru</div>
+                <span class="realtime-dot"></span>
+              </div>
+              <div id="activity-feed" class="activity-feed">
+                <div style="padding:16px;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>
+              </div>
+            </div>
+
+            <!-- Quick links -->
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px">Pintasan</div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <a href="explore.html" class="nav-item" style="text-decoration:none">
+                  <i class="fa-solid fa-compass"></i> Jelajahi Proyek
+                </a>
+                <a href="messages.html" class="nav-item" style="text-decoration:none">
+                  <i class="fa-solid fa-envelope"></i> Pesan
+                </a>
+                <a href="global-chat.html" class="nav-item" style="text-decoration:none">
+                  <i class="fa-solid fa-globe"></i> Global Chat
+                </a>
+                <a href="help.html" class="nav-item" style="text-decoration:none">
+                  <i class="fa-solid fa-life-ring"></i> Bantuan / Saran
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW PROJECT MODAL -->
+  <div class="modal-backdrop" id="modal-new-project" style="display:none">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">Buat Proyek Baru</div>
+        <button class="btn btn-ghost" onclick="closeModal('modal-new-project')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label class="input-label">Nama Proyek</label>
+          <input type="text" class="input" id="np-name" placeholder="mis. my-awesome-project"/>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Deskripsi <span class="text-muted">(opsional)</span></label>
+          <textarea class="input" id="np-desc" placeholder="Deskripsi singkat proyek Anda..." rows="3"></textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Visibilitas</label>
+          <select class="input" id="np-visibility">
+            <option value="public">Publik — siapa saja bisa melihat</option>
+            <option value="private">Privat — hanya Anda</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-new-project')">Batal</button>
+        <button class="btn btn-primary btn-sm" onclick="doCreateProject()">
+          <i class="fa-solid fa-folder-plus"></i> Buat Proyek
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { requireAuth, showToast, initMobileSidebar, initNotifications, initTheme, toggleTheme as _toggleTheme, loadSidebarLogo, renderSidebar, timeAgo, fileTypeIcon } from './app.js';
+    import { supabase, getProjectsByUser, createProject, updateUserProfile } from './supabase.js';
+
+    const user = requireAuth();
+    if (!user) throw new Error('not auth');
+
+    // Init
+    initTheme(user);
+    document.getElementById('sidebar').innerHTML = renderSidebar(user, 'dashboard');
+    loadSidebarLogo();
+    initMobileSidebar();
+    initNotifications(user.id);
+
+    // Theme toggle
+    window.toggleTheme = () => _toggleTheme(user.id, updateUserProfile);
+    const themeIcon = document.getElementById('theme-icon');
+    if (themeIcon) themeIcon.className = (user.theme || 'dark') === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+
+    // Welcome
+    document.getElementById('welcome-title').textContent = `Hai, ${user.display_name || user.username}!`;
+
+    // Load stats
+    async function loadStats() {
+      const [projs, stars, followers, files] = await Promise.all([
+        supabase.from('projects_Zyvenqo').select('id', {count:'exact',head:true}).eq('owner_id', user.id),
+        supabase.from('stars_Zyvenqo').select('id', {count:'exact',head:true}).in('project_id',
+          (await supabase.from('projects_Zyvenqo').select('id').eq('owner_id', user.id)).data?.map(p=>p.id) || []),
+        supabase.from('follows_Zyvenqo').select('id', {count:'exact',head:true}).eq('following_id', user.id),
+        supabase.from('files_Zyvenqo').select('id', {count:'exact',head:true}).in('project_id',
+          (await supabase.from('projects_Zyvenqo').select('id').eq('owner_id', user.id)).data?.map(p=>p.id) || [])
+      ]);
+      document.getElementById('stat-my-projects').textContent = projs.count || 0;
+      document.getElementById('stat-stars').textContent = stars.count || 0;
+      document.getElementById('stat-followers').textContent = followers.count || 0;
+      document.getElementById('stat-files').textContent = files.count || 0;
+    }
+
+    // Load projects
+    async function loadProjects() {
+      const { data: projects } = await getProjectsByUser(user.id);
+      const el = document.getElementById('my-projects-list');
+      const countEl = document.getElementById('projects-count');
+      if (!projects?.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <i class="fa-solid fa-folder-open empty-icon"></i>
+            <div class="empty-title">Belum ada proyek</div>
+            <div class="empty-desc">Buat proyek pertama Anda sekarang.</div>
+            <button class="btn btn-primary btn-sm mt-8" onclick="openNewProjectModal()"><i class="fa-solid fa-plus"></i> Buat Proyek</button>
+          </div>`;
+        countEl.textContent = '0 proyek';
+        return;
+      }
+      countEl.textContent = `${projects.length} proyek`;
+      el.innerHTML = projects.map(p => `
+        <div class="project-card" onclick="window.location.href='project.html?id=${p.id}'" style="margin-bottom:10px;border-radius:var(--radius-sm);">
+          <div style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+            <div>
+              <div class="project-name">${p.name}</div>
+              <div class="project-desc" style="margin-top:4px">${p.description || '<span style="color:var(--text-3)">Tidak ada deskripsi</span>'}</div>
+            </div>
+            <span class="badge ${p.visibility === 'public' ? 'badge-success' : 'badge-neutral'}">
+              <i class="fa-solid fa-${p.visibility === 'public' ? 'earth-asia' : 'lock'}"></i>
+              ${p.visibility === 'public' ? 'Publik' : 'Privat'}
+            </span>
+          </div>
+          <div class="project-meta">
+            <span><i class="fa-solid fa-star"></i> ${p.stars}</span>
+            <span><i class="fa-solid fa-clock"></i> ${timeAgo(p.updated_at)}</span>
+          </div>
+        </div>`).join('');
+    }
+
+    // Activity feed
+    async function loadActivity() {
+      const { data } = await supabase
+        .from('projects_Zyvenqo')
+        .select('*, users_Zyvenqo(username, display_name)')
+        .eq('visibility','public')
+        .order('updated_at', { ascending: false })
+        .limit(8);
+      const el = document.getElementById('activity-feed');
+      if (!data?.length) { el.innerHTML = '<div class="text-muted text-sm" style="padding:12px">Tidak ada aktifitas terbaru.</div>'; return; }
+      el.innerHTML = data.map(p => `
+        <div class="activity-item" onclick="window.location.href='project.html?id=${p.id}'" style="cursor:pointer">
+          <div class="activity-dot" style="background:var(--accent)"></div>
+          <div>
+            <div style="font-size:13px;font-weight:500">${p.users_Zyvenqo?.display_name || p.users_Zyvenqo?.username || 'Pengguna'}</div>
+            <div class="text-xs text-muted">memperbarui <strong style="color:var(--text-2)">${p.name}</strong></div>
+            <div class="text-xs text-muted">${timeAgo(p.updated_at)}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    // Search
+    let searchTimeout;
+    window.handleSearch = function(val) {
+      clearTimeout(searchTimeout);
+      if (!val.trim()) { loadProjects(); return; }
+      searchTimeout = setTimeout(async () => {
+        const { data } = await supabase
+          .from('projects_Zyvenqo')
+          .select('*, users_Zyvenqo(username,display_name)')
+          .or(`name.ilike.%${val}%,description.ilike.%${val}%`)
+          .eq('visibility','public')
+          .limit(10);
+        const el = document.getElementById('my-projects-list');
+        if (!data?.length) { el.innerHTML = '<div class="empty-state"><div class="empty-title">Tidak ditemukan</div></div>'; return; }
+        el.innerHTML = `<div class="text-xs text-muted" style="padding:8px 0 12px">Hasil pencarian untuk "${val}"</div>` +
+          data.map(p => `
+            <div class="project-card" onclick="window.location.href='project.html?id=${p.id}'" style="margin-bottom:10px;border-radius:var(--radius-sm);">
+              <div class="project-name">${p.name}</div>
+              <div class="text-xs text-muted">oleh ${p.users_Zyvenqo?.display_name || p.users_Zyvenqo?.username}</div>
+              <div class="project-desc">${p.description || ''}</div>
+            </div>`).join('');
+      }, 300);
+    }
+
+    // New project
+    window.openNewProjectModal = function() {
+      document.getElementById('modal-new-project').style.display = 'flex';
+      requestAnimationFrame(() => document.getElementById('modal-new-project').classList.add('show'));
+    }
+    window.closeModal = function(id) {
+      const m = document.getElementById(id);
+      if (!m) return;
+      m.classList.remove('show');
+      setTimeout(() => m.style.display = 'none', 200);
+    }
+    document.getElementById('modal-new-project').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModal('modal-new-project');
+    });
+
+    window.doCreateProject = async function() {
+      const name = document.getElementById('np-name').value.trim();
+      const desc = document.getElementById('np-desc').value.trim();
+      const vis = document.getElementById('np-visibility').value;
+      if (!name) { showToast('Nama proyek tidak boleh kosong.', 'error'); return; }
+      const { data, error } = await createProject(user.id, name, desc, vis);
+      if (error) { showToast('Gagal membuat proyek: ' + error.message, 'error'); return; }
+      showToast('Proyek berhasil dibuat!', 'success');
+      closeModal('modal-new-project');
+      window.location.href = 'project.html?id=' + data.id;
+    }
+
+    window.showToast = showToast;
+
+    // Responsive grid
+    function checkLayout() {
+      const grid = document.getElementById('main-grid');
+      if (window.innerWidth < 900) {
+        grid.style.gridTemplateColumns = '1fr';
+      } else {
+        grid.style.gridTemplateColumns = '1fr 320px';
+      }
+    }
+    window.addEventListener('resize', checkLayout);
+    checkLayout();
+
+    loadStats();
+    loadProjects();
+    loadActivity();
+  </script>
+</body>
+</html>

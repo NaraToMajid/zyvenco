@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Proyek — Zyvenqo</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    .project-header {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px;
+      margin-bottom: 20px;
+    }
+    .project-layout {
+      display: grid; grid-template-columns: 240px 1fr;
+      gap: 0; background: var(--bg-2);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; min-height: 500px;
+    }
+    .file-sidebar {
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+    .file-sidebar-header {
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-3);
+    }
+    .file-editor-area {
+      display: flex; flex-direction: column; flex: 1;
+    }
+    .file-editor-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: var(--bg-3); flex-wrap: wrap; gap: 8px;
+    }
+    .file-editor-content {
+      flex: 1; padding: 20px;
+      font-family: var(--font-mono); font-size: 13px;
+      line-height: 1.7; overflow: auto; white-space: pre-wrap;
+      word-break: break-all; color: var(--text);
+    }
+    .file-editor-empty {
+      display: flex; align-items: center; justify-content: center;
+      flex: 1; color: var(--text-3); flex-direction: column; gap: 12px;
+    }
+    @media (max-width: 700px) {
+      .project-layout { grid-template-columns: 1fr; }
+      .file-sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="main-content">
+    <div class="topbar">
+      <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fa-solid fa-bars"></i></button>
+      <div style="flex:1;display:flex;align-items:center;gap:8px;min-width:0">
+        <a href="dashboard.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i></a>
+        <span class="text-muted" style="font-size:13px">Proyek</span>
+        <i class="fa-solid fa-chevron-right text-muted" style="font-size:10px"></i>
+        <span id="topbar-project-name" class="truncate" style="font-size:13px;font-weight:600"></span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-view" style="display:none" onclick="viewProject()">
+          <i class="fa-solid fa-eye"></i> View
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-zyvedit" style="display:none" onclick="openZyvedit()">
+          <i class="fa-solid fa-pen-nib"></i> Zyvedit
+        </button>
+        <div class="dropdown" id="project-actions-dd">
+          <button class="btn-icon btn" onclick="toggleDD()"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+          <div class="dropdown-menu" id="project-dd-menu"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div id="project-header-card" class="project-header" style="display:none">
+        <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+              <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.5px" id="project-title"></h1>
+              <span class="badge" id="project-vis-badge"></span>
+            </div>
+            <p id="project-desc" class="text-sm" style="color:var(--text-2);margin-bottom:12px;line-height:1.6"></p>
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <a id="project-owner-link" href="#" class="flex items-center gap-8 text-sm text-muted" style="text-decoration:none">
+                <div id="project-owner-avatar"></div>
+                <span id="project-owner-name"></span>
+              </a>
+              <span class="text-xs text-muted"><i class="fa-solid fa-clock"></i> <span id="project-date"></span></span>
+              <span class="text-xs text-muted"><i class="fa-solid fa-star"></i> <span id="project-stars">0</span></span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;" id="project-action-btns"></div>
+        </div>
+      </div>
+
+      <!-- FILE BROWSER -->
+      <div class="project-layout" id="project-layout">
+        <div class="file-sidebar" id="file-sidebar">
+          <div class="file-sidebar-header">
+            <span>File</span>
+            <div id="file-sidebar-actions" style="display:flex;gap:4px"></div>
+          </div>
+          <div class="file-tree" id="file-tree" style="padding:8px;flex:1;overflow-y:auto">
+            <div style="padding:20px;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>
+          </div>
+        </div>
+        <div class="file-editor-area" id="file-editor-area">
+          <div class="file-editor-empty" id="file-editor-empty">
+            <i class="fa-solid fa-file-code" style="font-size:40px;opacity:0.2"></i>
+            <div class="text-muted text-sm">Pilih file untuk melihat isinya</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD FILE MODAL -->
+<div class="modal-backdrop" id="modal-upload" style="display:none">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Upload File</div>
+      <button class="btn btn-ghost" onclick="closeModal('modal-upload')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="border:2px dashed var(--border-2);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:border-color var(--transition)" id="upload-drop-zone" onclick="document.getElementById('upload-file-input').click()">
+        <i class="fa-solid fa-cloud-arrow-up" style="font-size:32px;color:var(--text-3);margin-bottom:12px;display:block"></i>
+        <div style="font-size:14px;font-weight:500">Klik atau drag & drop file di sini</div>
+        <div class="text-xs text-muted mt-8">Mendukung semua jenis file</div>
+      </div>
+      <input type="file" id="upload-file-input" multiple style="display:none" onchange="handleFileUpload(this.files)"/>
+      <div id="upload-preview" style="margin-top:12px;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-upload')">Batal</button>
+      <button class="btn btn-primary btn-sm" id="btn-do-upload" onclick="doUploadFiles()" disabled>
+        <i class="fa-solid fa-upload"></i> Upload
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE FILE MODAL -->
+<div class="modal-backdrop" id="modal-create-file" style="display:none">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Buat File Baru</div>
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-file')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label class="input-label">Nama File</label>
+        <div class="input-with-icon">
+          <i class="fa-solid fa-file"></i>
+          <input type="text" class="input" id="cf-name" placeholder="mis. index.html, main.js"/>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Isi Awal <span class="text-muted">(opsional)</span></label>
+        <textarea class="input" id="cf-content" placeholder="// Tulis kode di sini..." rows="6" style="font-family:var(--font-mono);font-size:13px"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-file')">Batal</button>
+      <button class="btn btn-primary btn-sm" onclick="doCreateFile()">
+        <i class="fa-solid fa-plus"></i> Buat File
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="modal-backdrop" id="modal-report" style="display:none">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Laporkan Proyek</div>
+      <button class="btn btn-ghost" onclick="closeModal('modal-report')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label class="input-label">Alasan Laporan</label>
+        <textarea class="input" id="report-reason" placeholder="Jelaskan mengapa Anda melaporkan proyek ini..." rows="4"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-report')">Batal</button>
+      <button class="btn btn-danger btn-sm" onclick="doReport()">
+        <i class="fa-solid fa-flag"></i> Kirim Laporan
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { requireAuth, showToast, initMobileSidebar, initTheme, loadSidebarLogo, renderSidebar, timeAgo, formatDate, formatBytes, fileTypeIcon, avatarHTML, confirmDialog } from './app.js';
+import { supabase, getProjectById, getFilesByProject, createFile, deleteFile, updateFile, deleteProject, starProject, unstarProject, isStarred, submitReport, uploadFile, updateProject } from './supabase.js';
+
+const user = requireAuth();
+if (!user) throw new Error('not auth');
+
+const params = new URLSearchParams(location.search);
+const projectId = params.get('id');
+if (!projectId) { window.location.href = 'dashboard.html'; throw new Error(); }
+
+initTheme(user);
+document.getElementById('sidebar').innerHTML = renderSidebar(user, '');
+loadSidebarLogo();
+initMobileSidebar();
+
+let project = null;
+let files = [];
+let selectedFile = null;
+let isOwner = false;
+let pendingUploadFiles = [];
+
+// Load project
+async function loadProject() {
+  const { data, error } = await getProjectById(projectId);
+  if (error || !data) { showToast('Proyek tidak ditemukan.', 'error'); window.location.href = 'dashboard.html'; return; }
+  project = data;
+  isOwner = user.id === data.owner_id || user.is_admin;
+
+  document.title = `${data.name} — Zyvenqo`;
+  document.getElementById('topbar-project-name').textContent = data.name;
+  document.getElementById('project-title').textContent = data.name;
+  document.getElementById('project-desc').textContent = data.description || '';
+  document.getElementById('project-date').textContent = formatDate(data.created_at);
+  document.getElementById('project-stars').textContent = data.stars;
+  document.getElementById('project-vis-badge').innerHTML = `
+    <i class="fa-solid fa-${data.visibility === 'public' ? 'earth-asia' : 'lock'}"></i>
+    ${data.visibility === 'public' ? 'Publik' : 'Privat'}`;
+  document.getElementById('project-vis-badge').className = `badge ${data.visibility === 'public' ? 'badge-success' : 'badge-neutral'}`;
+
+  const owner = data.users_Zyvenqo;
+  document.getElementById('project-owner-link').href = `profile.html?u=${owner?.username}`;
+  document.getElementById('project-owner-avatar').innerHTML = avatarHTML(owner, 'sm');
+  document.getElementById('project-owner-name').textContent = owner?.display_name || owner?.username || 'Pengguna';
+
+  // Action buttons
+  const btns = document.getElementById('project-action-btns');
+  if (isOwner) {
+    btns.innerHTML = `
+      <button class="btn btn-secondary btn-sm" onclick="openUploadModal()"><i class="fa-solid fa-upload"></i> Upload</button>
+      <button class="btn btn-secondary btn-sm" onclick="openCreateFileModal()"><i class="fa-solid fa-plus"></i> Tambah File</button>`;
+    document.getElementById('btn-zyvedit').style.display = 'flex';
+    document.getElementById('file-sidebar-actions').innerHTML = `
+      <button class="btn btn-ghost" style="padding:4px 6px;font-size:12px" onclick="openCreateFileModal()" title="Tambah file"><i class="fa-solid fa-plus"></i></button>
+      <button class="btn btn-ghost" style="padding:4px 6px;font-size:12px" onclick="openUploadModal()" title="Upload file"><i class="fa-solid fa-upload"></i></button>`;
+  } else {
+    // Star button
+    const starred = await isStarred(user.id, projectId);
+    btns.innerHTML = `
+      <button class="btn btn-secondary btn-sm" id="btn-star" onclick="toggleStar()">
+        <i class="fa-${starred ? 'solid' : 'regular'} fa-star" style="color:var(--warning)"></i>
+        ${starred ? 'Unstar' : 'Bintang'}
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="openReport()"><i class="fa-solid fa-flag"></i> Laporkan</button>`;
+  }
+
+  // Project dropdown
+  const ddMenu = document.getElementById('project-dd-menu');
+  if (isOwner) {
+    ddMenu.innerHTML = `
+      <div class="dropdown-item" onclick="openEditProject()"><i class="fa-solid fa-pen"></i> Edit Proyek</div>
+      <div class="dropdown-divider"></div>
+      <div class="dropdown-item danger" onclick="doDeleteProject()"><i class="fa-solid fa-trash"></i> Hapus Proyek</div>`;
+  } else {
+    ddMenu.innerHTML = `
+      <div class="dropdown-item" onclick="openReport()"><i class="fa-solid fa-flag"></i> Laporkan</div>`;
+  }
+
+  document.getElementById('project-header-card').style.display = 'block';
+  await loadFiles();
+}
+
+async function loadFiles() {
+  const { data } = await getFilesByProject(projectId);
+  files = data || [];
+
+  // Check for index.html
+  const hasIndex = files.some(f => f.name.toLowerCase() === 'index.html');
+  if (hasIndex) document.getElementById('btn-view').style.display = 'flex';
+
+  renderFileTree();
+}
+
+function renderFileTree() {
+  const tree = document.getElementById('file-tree');
+  if (!files.length) {
+    tree.innerHTML = `<div class="empty-state" style="padding:20px 10px">
+      <i class="fa-solid fa-folder-open empty-icon" style="font-size:28px"></i>
+      <div class="empty-desc">Belum ada file</div>
+    </div>`;
+    return;
+  }
+  tree.innerHTML = files.map(f => {
+    const isLocked = f.is_locked && !isOwner;
+    return `<div class="file-item ${selectedFile?.id === f.id ? 'active' : ''}" onclick="selectFile('${f.id}')" id="fi-${f.id}">
+      <i class="${fileTypeIcon(f.name)}"></i>
+      <span class="file-name truncate">${f.name}</span>
+      ${f.is_locked ? `<i class="fa-solid fa-lock" style="font-size:10px;color:var(--warning);flex-shrink:0"></i>` : ''}
+      ${isOwner ? `<div style="margin-left:auto;display:flex;gap:2px">
+        <button class="btn btn-ghost" style="padding:2px 4px;font-size:11px" onclick="event.stopPropagation();toggleLock('${f.id}',${f.is_locked})" title="${f.is_locked ? 'Buka kunci' : 'Kunci'}">
+          <i class="fa-solid fa-${f.is_locked ? 'lock-open' : 'lock'}"></i>
+        </button>
+        <button class="btn btn-ghost" style="padding:2px 4px;font-size:11px;color:var(--danger)" onclick="event.stopPropagation();doDeleteFile('${f.id}','${f.name}')" title="Hapus">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+window.selectFile = function(fileId) {
+  const file = files.find(f => f.id === fileId);
+  if (!file) return;
+
+  // Check if locked by non-owner
+  if (file.is_locked && !isOwner) {
+    showToast('File ini dikunci oleh pemilik.', 'warning'); return;
+  }
+
+  selectedFile = file;
+  document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
+  const fi = document.getElementById('fi-' + fileId);
+  if (fi) fi.classList.add('active');
+
+  const area = document.getElementById('file-editor-area');
+  const isImage = ['png','jpg','jpeg','gif','svg','webp'].includes(file.name.split('.').pop()?.toLowerCase());
+
+  area.innerHTML = `
+    <div class="file-editor-header">
+      <i class="${fileTypeIcon(file.name)}"></i>
+      <span style="font-family:var(--font-mono);font-size:13px">${file.name}</span>
+      ${file.is_locked ? `<span class="badge badge-warning" style="margin-left:4px"><i class="fa-solid fa-lock"></i> Terkunci</span>` : ''}
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        ${isOwner ? `<button class="btn btn-secondary btn-sm" onclick="editFileInModal('${file.id}')"><i class="fa-solid fa-pen"></i> Edit</button>` : ''}
+        <span class="badge badge-neutral">${formatBytes(file.size_bytes || 0)}</span>
+      </div>
+    </div>
+    <div class="file-editor-content">
+      ${isImage
+        ? `<div style="padding:20px;text-align:center"><img src="${file.content}" style="max-width:100%;max-height:400px;border-radius:var(--radius);border:1px solid var(--border)" /></div>`
+        : escapeHTML(file.content || '')}
+    </div>`;
+}
+
+function escapeHTML(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+window.toggleLock = async function(fileId, isLocked) {
+  const { error } = await updateFile(fileId, { is_locked: !isLocked });
+  if (error) { showToast('Gagal mengubah status lock.', 'error'); return; }
+  showToast(isLocked ? 'File dibuka.' : 'File dikunci.', 'success');
+  await loadFiles();
+}
+
+window.doDeleteFile = function(fileId, name) {
+  confirmDialog(`Hapus file "${name}"? Tindakan ini tidak bisa dibatalkan.`, async () => {
+    const { error } = await deleteFile(fileId);
+    if (error) { showToast('Gagal menghapus file.', 'error'); return; }
+    showToast('File dihapus.', 'success');
+    selectedFile = null;
+    document.getElementById('file-editor-area').innerHTML = `<div class="file-editor-empty"><i class="fa-solid fa-file-code" style="font-size:40px;opacity:0.2"></i><div class="text-muted text-sm">Pilih file untuk melihat isinya</div></div>`;
+    await loadFiles();
+  }, true);
+}
+
+// Edit file in modal
+window.editFileInModal = function(fileId) {
+  const file = files.find(f => f.id === fileId);
+  if (!file) return;
+  const isImage = ['png','jpg','jpeg','gif','svg','webp'].includes(file.name.split('.').pop()?.toLowerCase());
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.id = 'modal-edit-file';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:700px;width:100%" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">Edit: ${file.name}</div>
+        <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label class="input-label">Nama File</label>
+          <input type="text" class="input" id="ef-name" value="${file.name}"/>
+        </div>
+        ${!isImage ? `<div class="input-group">
+          <label class="input-label">Isi File</label>
+          <textarea class="input" id="ef-content" rows="12" style="font-family:var(--font-mono);font-size:13px">${file.content || ''}</textarea>
+        </div>` : '<p class="text-sm text-muted">File gambar tidak bisa diedit isinya langsung.</p>'}
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="this.closest('.modal-backdrop').remove()">Batal</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEditFile('${fileId}')">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan
+        </button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => modal.classList.add('show'));
+}
+
+window.saveEditFile = async function(fileId) {
+  const nameEl = document.getElementById('ef-name');
+  const contentEl = document.getElementById('ef-content');
+  if (!nameEl) return;
+  const updates = { name: nameEl.value.trim() };
+  if (contentEl) { updates.content = contentEl.value; updates.size_bytes = new Blob([contentEl.value]).size; }
+  const { error } = await updateFile(fileId, updates);
+  if (error) { showToast('Gagal menyimpan.', 'error'); return; }
+  document.getElementById('modal-edit-file')?.remove();
+  showToast('File disimpan.', 'success');
+  await loadFiles();
+}
+
+// Upload
+window.openUploadModal = function() {
+  pendingUploadFiles = [];
+  document.getElementById('upload-preview').innerHTML = '';
+  document.getElementById('btn-do-upload').disabled = true;
+  document.getElementById('modal-upload').style.display = 'flex';
+  requestAnimationFrame(() => document.getElementById('modal-upload').classList.add('show'));
+}
+
+window.handleFileUpload = function(fileList) {
+  pendingUploadFiles = Array.from(fileList);
+  const preview = document.getElementById('upload-preview');
+  preview.innerHTML = pendingUploadFiles.map((f,i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-3);border-radius:var(--radius-sm)">
+      <i class="${fileTypeIcon(f.name)}" style="width:16px"></i>
+      <span class="truncate text-sm flex-1">${f.name}</span>
+      <span class="text-xs text-muted">${formatBytes(f.size)}</span>
+    </div>`).join('');
+  document.getElementById('btn-do-upload').disabled = pendingUploadFiles.length === 0;
+}
+
+// Drag & drop
+const dz = document.getElementById('upload-drop-zone');
+if (dz) {
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--accent)'; });
+  dz.addEventListener('dragleave', () => { dz.style.borderColor = ''; });
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.style.borderColor = '';
+    if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files);
+  });
+}
+
+window.doUploadFiles = async function() {
+  const btn = document.getElementById('btn-do-upload');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Mengupload...';
+
+  for (const file of pendingUploadFiles) {
+    const isImage = file.type.startsWith('image/');
+    if (isImage) {
+      const { url, error } = await uploadFile('zyvenqo-uploads', `projects/${projectId}/${file.name}`, file);
+      if (error) { showToast(`Gagal upload ${file.name}`, 'error'); continue; }
+      await createFile(projectId, file.name, url, 'image');
+    } else {
+      const text = await file.text();
+      await createFile(projectId, file.name, text, 'text');
+    }
+  }
+
+  btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-upload"></i> Upload';
+  closeModal('modal-upload');
+  showToast('File berhasil diupload!', 'success');
+  await loadFiles();
+  await updateProject(projectId, { updated_at: new Date().toISOString() });
+}
+
+// Create file
+window.openCreateFileModal = function() {
+  document.getElementById('cf-name').value = '';
+  document.getElementById('cf-content').value = '';
+  document.getElementById('modal-create-file').style.display = 'flex';
+  requestAnimationFrame(() => document.getElementById('modal-create-file').classList.add('show'));
+}
+
+window.doCreateFile = async function() {
+  const name = document.getElementById('cf-name').value.trim();
+  const content = document.getElementById('cf-content').value;
+  if (!name) { showToast('Nama file tidak boleh kosong.', 'error'); return; }
+  const { error } = await createFile(projectId, name, content);
+  if (error) { showToast('Gagal membuat file.', 'error'); return; }
+  closeModal('modal-create-file');
+  showToast('File dibuat!', 'success');
+  await loadFiles();
+  await updateProject(projectId, { updated_at: new Date().toISOString() });
+}
+
+// View project
+window.viewProject = function() {
+  window.open(`viewer.html?id=${projectId}`, '_blank');
+}
+
+// Zyvedit
+window.openZyvedit = function() {
+  window.location.href = `zyvedit.html?id=${projectId}`;
+}
+
+// Star
+window.toggleStar = async function() {
+  const btn = document.getElementById('btn-star');
+  const starred = btn?.querySelector('i')?.classList?.contains('fa-solid');
+  if (starred) { await unstarProject(user.id, projectId); }
+  else { await starProject(user.id, projectId); }
+  showToast(starred ? 'Bintang dihapus.' : 'Proyek dibintangi!', 'success');
+  await loadProject();
+}
+
+// Report
+window.openReport = function() {
+  document.getElementById('modal-report').style.display = 'flex';
+  requestAnimationFrame(() => document.getElementById('modal-report').classList.add('show'));
+}
+window.doReport = async function() {
+  const reason = document.getElementById('report-reason').value.trim();
+  if (!reason) { showToast('Isi alasan laporan.', 'error'); return; }
+  const { error } = await submitReport(user.id, 'project', projectId, reason);
+  if (error) { showToast('Gagal mengirim laporan.', 'error'); return; }
+  closeModal('modal-report');
+  showToast('Laporan terkirim. Terima kasih!', 'success');
+}
+
+// Edit project
+window.openEditProject = function() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.id = 'modal-edit-project';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">Edit Proyek</div>
+        <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label class="input-label">Nama Proyek</label>
+          <input type="text" class="input" id="ep-name" value="${project.name}"/>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Deskripsi</label>
+          <textarea class="input" id="ep-desc" rows="3">${project.description || ''}</textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Visibilitas</label>
+          <select class="input" id="ep-vis">
+            <option value="public" ${project.visibility === 'public' ? 'selected' : ''}>Publik</option>
+            <option value="private" ${project.visibility === 'private' ? 'selected' : ''}>Privat</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="this.closest('.modal-backdrop').remove()">Batal</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEditProject()">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan
+        </button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => modal.classList.add('show'));
+}
+
+window.saveEditProject = async function() {
+  const name = document.getElementById('ep-name').value.trim();
+  const desc = document.getElementById('ep-desc').value;
+  const vis = document.getElementById('ep-vis').value;
+  const { error } = await updateProject(projectId, { name, description: desc, visibility: vis });
+  if (error) { showToast('Gagal menyimpan.', 'error'); return; }
+  document.getElementById('modal-edit-project')?.remove();
+  showToast('Proyek diperbarui.', 'success');
+  await loadProject();
+}
+
+// Delete project
+window.doDeleteProject = function() {
+  confirmDialog('Hapus proyek ini beserta semua filenya? Tindakan tidak bisa dibatalkan.', async () => {
+    const { error } = await deleteProject(projectId);
+    if (error) { showToast('Gagal menghapus proyek.', 'error'); return; }
+    showToast('Proyek dihapus.', 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 800);
+  }, true);
+}
+
+// Dropdown toggle
+window.toggleDD = function() {
+  document.getElementById('project-actions-dd').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  const dd = document.getElementById('project-actions-dd');
+  if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+});
+
+// Close modals
+window.closeModal = function(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
+  m.classList.remove('show');
+  setTimeout(() => m.style.display = 'none', 200);
+}
+
+window.showToast = showToast;
+window.confirmDialog = confirmDialog;
+window.formatBytes = formatBytes;
+
+loadProject();
+</script>
+</body>
+</html>
