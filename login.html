@@ -81,20 +81,55 @@
       display: none;
     }
     #panel-back-warning.show { display: block; }
+
+    /* Additional styles for better UX */
+    .mt-8 { margin-top: 8px; }
+    .mb-16 { margin-bottom: 16px; }
+    .text-sm { font-size: 13px; }
+    .text-danger { color: var(--danger); }
+    .text-muted { color: var(--text-3); }
+    .text-accent { color: var(--accent); }
+    .w-full { width: 100%; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-danger { background: var(--danger); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; }
+    .btn-secondary { background: var(--bg-3); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; padding: 8px 16px; }
+    .avatar-xl { width: 96px; height: 96px; border-radius: 50%; background: var(--bg-3); display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--text-3); border: 2px solid var(--border); }
+    .realtime-dot { width: 8px; height: 8px; background: var(--warning); border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .captcha-box { display: flex; align-items: center; gap: 12px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin: 16px 0; cursor: pointer; transition: all var(--transition); }
+    .captcha-checkbox { width: 20px; height: 20px; border: 2px solid var(--border-2); border-radius: 4px; display: flex; align-items: center; justify-content: center; background: var(--bg-2); transition: all var(--transition); }
+    .captcha-box.checked { background: rgba(61,214,140,0.05); border-color: var(--success); }
+    .captcha-text { flex: 1; font-size: 14px; color: var(--text-2); }
+    .captcha-logo { font-size: 20px; color: var(--text-3); }
+    .input-group { margin-bottom: 16px; }
+    .input-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--text-2); }
+    .input-with-icon { position: relative; }
+    .input-with-icon i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: 14px; }
+    .input-with-icon input, .input-with-icon textarea { width: 100%; padding: 12px 12px 12px 36px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 14px; transition: all var(--transition); }
+    .input-with-icon textarea { padding: 12px; resize: vertical; }
+    .input-with-icon input:focus, .input-with-icon textarea:focus { outline: none; border-color: var(--accent); }
+    .btn { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 14px; cursor: pointer; transition: all var(--transition); border: none; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-2); transform: translateY(-1px); }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-size: 14px; box-shadow: var(--shadow); animation: slideIn 0.3s ease; z-index: 1000; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   </style>
 </head>
 <body>
   <div class="auth-wrap fade-in">
     <div class="auth-logo">
-      <a href="index.html">Zyvен<span>qo</span></a>
+      <a href="index.html">Zyven<span>qo</span></a>
       <div class="tagline">Platform Kode untuk Developer</div>
     </div>
     <div class="auth-card">
       <div class="auth-tabs">
-        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">
+        <button class="auth-tab active" id="tab-login" onclick="window.switchTab('login')">
           <i class="fa-solid fa-right-to-bracket"></i> Masuk
         </button>
-        <button class="auth-tab" id="tab-register" onclick="switchTab('register')">
+        <button class="auth-tab" id="tab-register" onclick="window.switchTab('register')">
           <i class="fa-solid fa-user-plus"></i> Daftar
         </button>
       </div>
@@ -114,16 +149,16 @@
             <div class="input-with-icon">
               <i class="fa-solid fa-lock"></i>
               <input type="password" class="input" id="login-password" placeholder="password Anda" autocomplete="current-password"/>
-              <i class="fa-solid fa-eye" id="toggle-pass" style="left:auto;right:12px;cursor:pointer;pointer-events:all;" onclick="togglePass()"></i>
+              <i class="fa-solid fa-eye" id="toggle-pass" style="left:auto;right:12px;cursor:pointer;pointer-events:all;position:absolute;top:50%;transform:translateY(-50%);" onclick="window.togglePass()"></i>
             </div>
           </div>
           <div id="login-error" class="text-danger text-sm mb-16" style="display:none"></div>
-          <button class="btn btn-primary w-full" id="btn-login" onclick="doLogin()">
+          <button class="btn btn-primary w-full" id="btn-login" onclick="window.doLogin()">
             <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Zyvenqo
           </button>
           <div style="text-align:center; margin-top:16px;">
             <span class="text-sm text-muted">Belum punya akun? </span>
-            <a href="#" class="text-sm text-accent" onclick="switchTab('register')">Daftar sekarang</a>
+            <a href="#" class="text-sm text-accent" onclick="window.switchTab('register')">Daftar sekarang</a>
           </div>
         </div>
 
@@ -151,7 +186,7 @@
             </div>
           </div>
           <!-- CAPTCHA -->
-          <div class="captcha-box" id="captcha-box" onclick="toggleCaptcha()">
+          <div class="captcha-box" id="captcha-box" onclick="window.toggleCaptcha()">
             <div class="captcha-checkbox" id="captcha-check">
               <i class="fa-solid fa-check" style="display:none;font-size:12px"></i>
             </div>
@@ -159,12 +194,12 @@
             <i class="fa-solid fa-shield-halved captcha-logo"></i>
           </div>
           <div id="reg-error" class="text-danger text-sm mb-16" style="display:none"></div>
-          <button class="btn btn-primary w-full" id="btn-register" onclick="doRegister()">
+          <button class="btn btn-primary w-full" id="btn-register" onclick="window.doRegister()">
             <i class="fa-solid fa-paper-plane"></i> Konfirmasi Pembuatan Akun
           </button>
           <div style="text-align:center; margin-top:16px;">
             <span class="text-sm text-muted">Sudah punya akun? </span>
-            <a href="#" class="text-sm text-accent" onclick="switchTab('login')">Masuk di sini</a>
+            <a href="#" class="text-sm text-accent" onclick="window.switchTab('login')">Masuk di sini</a>
           </div>
         </div>
 
@@ -185,18 +220,18 @@
               <span class="realtime-dot"></span>
               <span id="confirm-live-text">Akun Sedang Di Konfirmasi Admin...</span>
             </div>
-            <button class="btn btn-primary w-full" id="btn-continue" onclick="doContinue()" style="display:none">
+            <button class="btn btn-primary w-full" id="btn-continue" onclick="window.doContinue()" style="display:none">
               <i class="fa-solid fa-arrow-right"></i> Lanjutkan
             </button>
-            <button class="btn btn-secondary w-full mt-8" id="btn-back-confirm" onclick="showBackWarning()">
+            <button class="btn btn-secondary w-full mt-8" id="btn-back-confirm" onclick="window.showBackWarning()">
               <i class="fa-solid fa-arrow-left"></i> Kembali
             </button>
             <div class="back-warning" id="panel-back-warning">
               <i class="fa-solid fa-triangle-exclamation"></i>
               Jika Anda kembali sekarang, akun tidak dapat digunakan meskipun sudah dikonfirmasi. Apakah yakin?
               <div style="display:flex;gap:8px;margin-top:10px;">
-                <button class="btn btn-danger btn-sm" onclick="doBack()">Ya, Kembali</button>
-                <button class="btn btn-secondary btn-sm" onclick="hideBackWarning()">Batal</button>
+                <button class="btn btn-danger btn-sm" onclick="window.doBack()">Ya, Kembali</button>
+                <button class="btn btn-secondary btn-sm" onclick="window.hideBackWarning()">Batal</button>
               </div>
             </div>
           </div>
@@ -218,7 +253,7 @@
                 <i class="fa-solid fa-camera" style="font-size:11px;color:#fff"></i>
               </div>
             </div>
-            <input type="file" id="setup-avatar-input" accept="image/*" style="display:none" onchange="previewAvatar(this)"/>
+            <input type="file" id="setup-avatar-input" accept="image/*" style="display:none" onchange="window.previewAvatar(this)"/>
             <div class="text-xs text-muted mt-8">Klik untuk upload foto profil</div>
           </div>
           <div class="input-group">
@@ -233,7 +268,7 @@
             <textarea class="input" id="setup-bio" placeholder="Ceritakan sedikit tentang diri Anda..." rows="3"></textarea>
           </div>
           <div id="setup-error" class="text-danger text-sm mb-16" style="display:none"></div>
-          <button class="btn btn-primary w-full" onclick="doSetupProfile()">
+          <button class="btn btn-primary w-full" onclick="window.doSetupProfile()">
             <i class="fa-solid fa-check"></i> Simpan & Mulai Jelajahi
           </button>
         </div>
@@ -246,6 +281,7 @@
   <script type="module">
     import { supabase, registerUser, loginUser, updateUserProfile, setCurrentUser, getCurrentUser, uploadFile } from './supabase.js';
 
+    // Store variables on window
     window.pendingUserId = null;
     window.pendingUserObj = null;
     window.captchaChecked = false;
@@ -254,7 +290,7 @@
 
     // Check URL param
     const params = new URLSearchParams(location.search);
-    if (params.get('tab') === 'register') switchTab('register');
+    if (params.get('tab') === 'register') window.switchTab('register');
 
     window.switchTab = function(tab) {
       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -269,11 +305,11 @@
       if (inp.type === 'password') {
         inp.type = 'text';
         icon.className = 'fa-solid fa-eye-slash';
-        icon.style.cssText = 'left:auto;right:12px;cursor:pointer;pointer-events:all;position:absolute;top:50%;transform:translateY(-50%);color:var(--text-3)';
+        icon.style.color = 'var(--text-3)';
       } else {
         inp.type = 'password';
         icon.className = 'fa-solid fa-eye';
-        icon.style.cssText = 'left:auto;right:12px;cursor:pointer;pointer-events:all;position:absolute;top:50%;transform:translateY(-50%);color:var(--text-3)';
+        icon.style.color = 'var(--text-3)';
       }
     }
 
@@ -327,7 +363,7 @@
       }
 
       setCurrentUser(user);
-      showToast('Selamat datang kembali, ' + (user.display_name || user.username) + '!', 'success');
+      window.showToast('Selamat datang kembali, ' + (user.display_name || user.username) + '!', 'success');
       setTimeout(() => {
         if (user.is_admin) { window.location.href = 'admin.html'; }
         else { window.location.href = 'dashboard.html'; }
@@ -365,16 +401,16 @@
       window.pendingUserId = user.id;
       window.pendingUserObj = user;
 
-      // Show waiting panel
+      // Hide tabs
       document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
       document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
       document.getElementById('panel-waiting').classList.add('active');
 
       // Start polling for confirmation
-      startPolling(user.id);
+      window.startPolling(user.id);
     }
 
-    function startPolling(userId) {
+    window.startPolling = function(userId) {
       if (window.confirmInterval) clearInterval(window.confirmInterval);
       window.confirmInterval = setInterval(async () => {
         const { data } = await supabase
@@ -415,9 +451,11 @@
     window.showBackWarning = function() {
       document.getElementById('panel-back-warning').classList.add('show');
     }
+    
     window.hideBackWarning = function() {
       document.getElementById('panel-back-warning').classList.remove('show');
     }
+    
     window.doBack = function() {
       if (window.confirmInterval) clearInterval(window.confirmInterval);
       window.location.href = 'index.html';
@@ -460,14 +498,14 @@
 
       if (updated) {
         setCurrentUser(updated);
-        showToast('Profil tersimpan! Selamat datang di Zyvenqo.', 'success');
+        window.showToast('Profil tersimpan! Selamat datang di Zyvenqo.', 'success');
         setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
       }
     }
 
     // ENTER key on login
     document.getElementById('login-password').addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLogin();
+      if (e.key === 'Enter') window.doLogin();
     });
 
     window.showToast = function(msg, type = 'info') {
