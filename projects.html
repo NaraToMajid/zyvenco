@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proyek — Zyvenqo</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.proj-card-full{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;transition:border-color .2s,transform .2s;cursor:pointer;display:flex;flex-direction:column;gap:.65rem}
+.proj-card-full:hover{border-color:var(--accent);transform:translateY(-2px)}
+.proj-actions{display:flex;gap:.35rem;margin-top:auto}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+        <h2 style="font-size:1.1rem">Proyek Saya</h2>
+      </div>
+      <div class="topbar-right">
+        <div class="search-bar">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="search-input" placeholder="Cari proyek..." oninput="filterProjects(this.value)">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openNewProject()"><i class="fa-solid fa-plus"></i> Baru</button>
+      </div>
+    </div>
+
+    <div class="tabs mb-3">
+      <button class="tab active" onclick="filterTab('all',this)">Semua</button>
+      <button class="tab" onclick="filterTab('public',this)">Publik</button>
+      <button class="tab" onclick="filterTab('private',this)">Privat</button>
+    </div>
+
+    <div class="proj-grid" id="projects-grid">
+      <div class="empty-state" style="grid-column:1/-1">
+        <i class="fa-solid fa-folder-open"></i>
+        <p>Memuat proyek...</p>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast-container"></div>
+
+<script type="module">
+import { buildSidebar, initTheme, toast, Auth, db, timeAgo, openModal, closeModal, confirm2 } from './app.js';
+initTheme();
+const u = Auth.requireAuth();
+if(!u) throw new Error();
+buildSidebar('projects');
+
+let allProjects = [];
+let currentTab = 'all';
+
+async function load() {
+  const { data } = await db.from('projects_Zyven').select('*').eq('owner_id', u.id).order('updated_at', { ascending: false });
+  allProjects = data || [];
+  render();
+}
+load();
+
+if(new URLSearchParams(location.search).get('new') === '1') {
+  setTimeout(() => openNewProject(), 300);
+}
+
+window.filterProjects = function(q) {
+  const query = q.toLowerCase();
+  const filtered = allProjects.filter(p =>
+    (currentTab === 'all' || p.visibility === currentTab) &&
+    (p.name.toLowerCase().includes(query) || (p.description||'').toLowerCase().includes(query))
+  );
+  renderList(filtered);
+};
+
+window.filterTab = function(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = tab;
+  render();
+};
+
+function render() {
+  const filtered = allProjects.filter(p => currentTab === 'all' || p.visibility === currentTab);
+  renderList(filtered);
+}
+
+function renderList(list) {
+  const grid = document.getElementById('projects-grid');
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><i class="fa-solid fa-folder-open"></i><p>Belum ada proyek</p></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(p => `
+    <div class="proj-card-full">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-1">
+          <i class="fa-solid fa-folder" style="color:var(--accent3)"></i>
+          <span style="font-weight:700">${p.name}</span>
+        </div>
+        <span class="badge ${p.visibility==='private'?'badge-gray':'badge-green'}">${p.visibility==='private'?'Privat':'Publik'}</span>
+      </div>
+      ${p.description ? `<p style="font-size:.82rem;color:var(--text3)">${p.description}</p>` : ''}
+      <div class="flex gap-2" style="font-size:.78rem;color:var(--text3)">
+        <span><i class="fa-solid fa-star"></i> ${p.stars||0}</span>
+        <span><i class="fa-solid fa-eye"></i> ${p.views||0}</span>
+        <span style="margin-left:auto">${timeAgo(p.updated_at)}</span>
+      </div>
+      <div class="proj-actions">
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();location.href='project.html?id=${p.id}'"><i class="fa-solid fa-folder-open"></i> Buka</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editProject('${p.id}')"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="event.stopPropagation();deleteProject('${p.id}','${p.name}')"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.openNewProject = function() {
+  openModal(`
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-folder-plus"></i> Proyek Baru</h3>
+      <button class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="createProject(event)" class="flex flex-col gap-2">
+      <div class="form-group">
+        <label>Nama Proyek *</label>
+        <input class="inp" id="np-name" placeholder="nama-proyek-ku" required maxlength="80">
+      </div>
+      <div class="form-group">
+        <label>Deskripsi</label>
+        <textarea class="inp" id="np-desc" placeholder="Deskripsi singkat..." rows="2" maxlength="200"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Visibilitas</label>
+        <select class="inp" id="np-vis">
+          <option value="public">Publik - Bisa dilihat semua orang</option>
+          <option value="private">Privat - Hanya kamu</option>
+        </select>
+      </div>
+      <div id="np-err" class="form-err" style="display:none"></div>
+      <div class="flex gap-1 justify-end mt-1">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal()">Batal</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="np-btn"><i class="fa-solid fa-plus"></i> Buat</button>
+      </div>
+    </form>
+  `);
+};
+
+window.createProject = async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('np-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  const name = document.getElementById('np-name').value.trim();
+  const desc = document.getElementById('np-desc').value.trim();
+  const vis = document.getElementById('np-vis').value;
+  const { data, error } = await db.from('projects_Zyven')
+    .insert({ owner_id: u.id, name, description: desc, visibility: vis })
+    .select().single();
+  if (error) {
+    document.getElementById('np-err').style.display = '';
+    document.getElementById('np-err').textContent = error.message;
+    btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plus"></i> Buat';
+  } else {
+    closeModal();
+    toast('Proyek berhasil dibuat!', 'success');
+    location.href = `project.html?id=${data.id}`;
+  }
+};
+
+window.editProject = function(id) {
+  const p = allProjects.find(x => x.id === id);
+  if (!p) return;
+  openModal(`
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-pen"></i> Edit Proyek</h3>
+      <button class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form onsubmit="saveEditProject(event,'${id}')" class="flex flex-col gap-2">
+      <div class="form-group">
+        <label>Nama Proyek</label>
+        <input class="inp" id="ep-name" value="${p.name}" required maxlength="80">
+      </div>
+      <div class="form-group">
+        <label>Deskripsi</label>
+        <textarea class="inp" id="ep-desc" rows="2" maxlength="200">${p.description||''}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Visibilitas</label>
+        <select class="inp" id="ep-vis">
+          <option value="public" ${p.visibility==='public'?'selected':''}>Publik</option>
+          <option value="private" ${p.visibility==='private'?'selected':''}>Privat</option>
+        </select>
+      </div>
+      <div class="flex gap-1 justify-end mt-1">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal()">Batal</button>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-check"></i> Simpan</button>
+      </div>
+    </form>
+  `);
+};
+
+window.saveEditProject = async function(e, id) {
+  e.preventDefault();
+  const { error } = await db.from('projects_Zyven').update({
+    name: document.getElementById('ep-name').value.trim(),
+    description: document.getElementById('ep-desc').value.trim(),
+    visibility: document.getElementById('ep-vis').value,
+    updated_at: new Date().toISOString()
+  }).eq('id', id);
+  if (!error) { closeModal(); toast('Proyek diperbarui', 'success'); load(); }
+};
+
+window.deleteProject = function(id, name) {
+  confirm2(`Hapus proyek "<strong>${name}</strong>"? Semua file akan ikut terhapus.`, async () => {
+    await db.from('projects_Zyven').delete().eq('id', id);
+    toast('Proyek dihapus', 'success');
+    load();
+  });
+};
+</script>
+</body>
+</html>
