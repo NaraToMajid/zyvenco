@@ -1,522 +1,340 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="dark">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Masuk / Daftar — Zyvenqo</title>
-  <link rel="stylesheet" href="styles.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <style>
-    body {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; background: var(--bg);
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 60px 60px;
-      padding: 20px;
-    }
-    .auth-wrap {
-      width: 100%; max-width: 440px;
-      position: relative;
-    }
-    .auth-logo {
-      text-align: center; margin-bottom: 28px;
-    }
-    .auth-logo a {
-      font-size: 28px; font-weight: 800; letter-spacing: -1px;
-      color: var(--text); text-decoration: none;
-    }
-    .auth-logo a span { color: var(--accent); }
-    .auth-logo .tagline { font-size: 13px; color: var(--text-3); margin-top: 4px; }
-    .auth-card {
-      background: var(--bg-2); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); overflow: hidden;
-      box-shadow: var(--shadow);
-    }
-    .auth-tabs {
-      display: flex; border-bottom: 1px solid var(--border);
-    }
-    .auth-tab {
-      flex: 1; padding: 14px; text-align: center;
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      color: var(--text-3); border-bottom: 2px solid transparent;
-      transition: all var(--transition); background: none; border-top: none; border-left: none; border-right: none;
-    }
-    .auth-tab.active {
-      color: var(--accent-2); border-bottom-color: var(--accent);
-      background: var(--accent-glow);
-    }
-    .auth-body { padding: 28px; }
-    .auth-panel { display: none; }
-    .auth-panel.active { display: block; }
-
-    /* Confirmation status */
-    .confirm-status {
-      text-align: center; padding: 16px 0;
-    }
-    .confirm-icon {
-      width: 64px; height: 64px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 28px; margin: 0 auto 16px;
-      background: var(--bg-4); border: 2px solid var(--border-2);
-      transition: all 0.5s ease;
-    }
-    .confirm-icon.pending { color: var(--warning); border-color: rgba(245,166,35,0.4); }
-    .confirm-icon.confirmed { color: var(--success); border-color: rgba(61,214,140,0.4); background: rgba(61,214,140,0.08); }
-    .confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
-    .confirm-desc { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px; }
-    .confirm-live {
-      display: flex; align-items: center; gap: 8px; justify-content: center;
-      padding: 10px 16px; border-radius: var(--radius);
-      background: var(--bg-3); border: 1px solid var(--border);
-      font-size: 13px; color: var(--text-2); margin-bottom: 20px;
-    }
-    .confirm-live.confirmed { background: rgba(61,214,140,0.08); border-color: rgba(61,214,140,0.25); color: var(--success); }
-
-    .back-warning {
-      background: rgba(255,75,75,0.08); border: 1px solid rgba(255,75,75,0.2);
-      border-radius: var(--radius-sm); padding: 10px 14px;
-      font-size: 12px; color: var(--danger); margin-top: 8px;
-      display: none;
-    }
-    #panel-back-warning.show { display: block; }
-
-    /* Additional styles for better UX */
-    .mt-8 { margin-top: 8px; }
-    .mb-16 { margin-bottom: 16px; }
-    .text-sm { font-size: 13px; }
-    .text-danger { color: var(--danger); }
-    .text-muted { color: var(--text-3); }
-    .text-accent { color: var(--accent); }
-    .w-full { width: 100%; }
-    .btn-sm { padding: 6px 12px; font-size: 12px; }
-    .btn-danger { background: var(--danger); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; }
-    .btn-secondary { background: var(--bg-3); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; padding: 8px 16px; }
-    .avatar-xl { width: 96px; height: 96px; border-radius: 50%; background: var(--bg-3); display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--text-3); border: 2px solid var(--border); }
-    .realtime-dot { width: 8px; height: 8px; background: var(--warning); border-radius: 50%; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; margin-right: 8px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .captcha-box { display: flex; align-items: center; gap: 12px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin: 16px 0; cursor: pointer; transition: all var(--transition); }
-    .captcha-checkbox { width: 20px; height: 20px; border: 2px solid var(--border-2); border-radius: 4px; display: flex; align-items: center; justify-content: center; background: var(--bg-2); transition: all var(--transition); }
-    .captcha-box.checked { background: rgba(61,214,140,0.05); border-color: var(--success); }
-    .captcha-text { flex: 1; font-size: 14px; color: var(--text-2); }
-    .captcha-logo { font-size: 20px; color: var(--text-3); }
-    .input-group { margin-bottom: 16px; }
-    .input-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--text-2); }
-    .input-with-icon { position: relative; }
-    .input-with-icon i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: 14px; }
-    .input-with-icon input, .input-with-icon textarea { width: 100%; padding: 12px 12px 12px 36px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 14px; transition: all var(--transition); }
-    .input-with-icon textarea { padding: 12px; resize: vertical; }
-    .input-with-icon input:focus, .input-with-icon textarea:focus { outline: none; border-color: var(--accent); }
-    .btn { padding: 12px 20px; border-radius: var(--radius); font-weight: 600; font-size: 14px; cursor: pointer; transition: all var(--transition); border: none; }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover:not(:disabled) { background: var(--accent-2); transform: translateY(-1px); }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-size: 14px; box-shadow: var(--shadow); animation: slideIn 0.3s ease; z-index: 1000; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masuk / Daftar — Zyvenqo</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+<style>
+.auth-tabs{display:flex;gap:0;margin-bottom:1.75rem;border-bottom:1px solid var(--border)}
+.auth-tab{flex:1;padding:.7rem;text-align:center;background:none;border:none;font-weight:700;font-size:.9rem;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
+.auth-tab.active{color:var(--accent3);border-bottom-color:var(--accent)}
+.pending-card{text-align:center;padding:1.5rem 0}
+.pending-status{display:flex;align-items:center;justify-content:center;gap:.75rem;padding:.85rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin:1.25rem 0;font-size:.875rem}
+.pending-status.confirmed{border-color:var(--green);background:rgba(34,197,94,.06)}
+.spinner-sm{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--yellow);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;flex-shrink:0}
+</style>
 </head>
 <body>
-  <div class="auth-wrap fade-in">
-    <div class="auth-logo">
-      <a href="index.html">Zyven<span>qo</span></a>
-      <div class="tagline">Platform Kode untuk Developer</div>
+<div class="auth-page">
+  <div style="width:100%;max-width:420px">
+    <div class="auth-logo mb-2">
+      <a href="index.html" class="hp-logo" style="justify-content:center">
+        <span id="logo-icon" style="width:38px;height:38px;background:rgba(108,99,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent3);font-size:1.2rem"><i class="fa-solid fa-code"></i></span>
+        <img id="logo-img" src="" style="display:none;width:38px;height:38px;border-radius:10px;object-fit:cover" alt="logo">
+        <span class="logo-name" style="font-size:1.3rem;font-weight:800">Zyven<span style="color:var(--accent3)">qo</span></span>
+      </a>
     </div>
-    <div class="auth-card">
+
+    <!-- LOGIN/REGISTER CARD -->
+    <div class="auth-card" id="auth-card">
       <div class="auth-tabs">
-        <button class="auth-tab active" id="tab-login" onclick="window.switchTab('login')">
-          <i class="fa-solid fa-right-to-bracket"></i> Masuk
-        </button>
-        <button class="auth-tab" id="tab-register" onclick="window.switchTab('register')">
-          <i class="fa-solid fa-user-plus"></i> Daftar
-        </button>
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Masuk</button>
+        <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Daftar</button>
       </div>
 
-      <!-- LOGIN PANEL -->
-      <div class="auth-body">
-        <div class="auth-panel active" id="panel-login">
-          <div class="input-group">
-            <label class="input-label">Username</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-at"></i>
-              <input type="text" class="input" id="login-username" placeholder="username Anda" autocomplete="username"/>
+      <!-- LOGIN -->
+      <form id="login-form" onsubmit="doLogin(event)">
+        <div class="flex flex-col gap-2">
+          <div class="form-group">
+            <label>Username</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-user"></i>
+              <input class="inp inp-icon" id="l-user" type="text" placeholder="username kamu" required autocomplete="username">
             </div>
           </div>
-          <div class="input-group">
-            <label class="input-label">Password</label>
-            <div class="input-with-icon">
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrap">
               <i class="fa-solid fa-lock"></i>
-              <input type="password" class="input" id="login-password" placeholder="password Anda" autocomplete="current-password"/>
-              <i class="fa-solid fa-eye" id="toggle-pass" style="left:auto;right:12px;cursor:pointer;pointer-events:all;position:absolute;top:50%;transform:translateY(-50%);" onclick="window.togglePass()"></i>
+              <input class="inp inp-icon" id="l-pass" type="password" placeholder="••••••••" required autocomplete="current-password">
+              <button type="button" onclick="togglePw('l-pass',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
-          <div id="login-error" class="text-danger text-sm mb-16" style="display:none"></div>
-          <button class="btn btn-primary w-full" id="btn-login" onclick="window.doLogin()">
-            <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Zyvenqo
+          <div id="l-err" class="form-err" style="display:none"></div>
+          <button class="btn btn-primary w-full mt-1" type="submit" id="l-btn">
+            <i class="fa-solid fa-right-to-bracket"></i> Masuk
           </button>
-          <div style="text-align:center; margin-top:16px;">
-            <span class="text-sm text-muted">Belum punya akun? </span>
-            <a href="#" class="text-sm text-accent" onclick="window.switchTab('register')">Daftar sekarang</a>
-          </div>
         </div>
+      </form>
 
-        <!-- REGISTER PANEL -->
-        <div class="auth-panel" id="panel-register">
-          <div class="input-group">
-            <label class="input-label">Username</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-at"></i>
-              <input type="text" class="input" id="reg-username" placeholder="pilih username unik" autocomplete="username"/>
+      <!-- REGISTER -->
+      <form id="register-form" style="display:none" onsubmit="doRegister(event)">
+        <div class="flex flex-col gap-2">
+          <div class="form-group">
+            <label>Username</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-user"></i>
+              <input class="inp inp-icon" id="r-user" type="text" placeholder="pilih username unik" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+">
             </div>
+            <small>Hanya huruf, angka, dan underscore</small>
           </div>
-          <div class="input-group">
-            <label class="input-label">Password</label>
-            <div class="input-with-icon">
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrap">
               <i class="fa-solid fa-lock"></i>
-              <input type="password" class="input" id="reg-password" placeholder="minimal 6 karakter" autocomplete="new-password"/>
+              <input class="inp inp-icon" id="r-pass" type="password" placeholder="min. 6 karakter" required minlength="6" autocomplete="new-password">
             </div>
           </div>
-          <div class="input-group">
-            <label class="input-label">Konfirmasi Password</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-lock-open"></i>
-              <input type="password" class="input" id="reg-confirm" placeholder="ulangi password Anda" autocomplete="new-password"/>
+          <div class="form-group">
+            <label>Konfirmasi Password</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-lock"></i>
+              <input class="inp inp-icon" id="r-pass2" type="password" placeholder="ulangi password" required autocomplete="new-password">
             </div>
           </div>
           <!-- CAPTCHA -->
-          <div class="captcha-box" id="captcha-box" onclick="window.toggleCaptcha()">
-            <div class="captcha-checkbox" id="captcha-check">
-              <i class="fa-solid fa-check" style="display:none;font-size:12px"></i>
+          <div class="form-group">
+            <label>Verifikasi</label>
+            <div class="captcha-box">
+              <span class="captcha-question" id="captcha-q"></span>
+              <input class="inp" id="captcha-a" type="number" placeholder="Jawaban" style="width:90px;text-align:center" required>
             </div>
-            <span class="captcha-text">Saya bukan robot</span>
-            <i class="fa-solid fa-shield-halved captcha-logo"></i>
           </div>
-          <div id="reg-error" class="text-danger text-sm mb-16" style="display:none"></div>
-          <button class="btn btn-primary w-full" id="btn-register" onclick="window.doRegister()">
+          <div id="r-err" class="form-err" style="display:none"></div>
+          <button class="btn btn-primary w-full mt-1" type="submit" id="r-btn">
             <i class="fa-solid fa-paper-plane"></i> Konfirmasi Pembuatan Akun
           </button>
-          <div style="text-align:center; margin-top:16px;">
-            <span class="text-sm text-muted">Sudah punya akun? </span>
-            <a href="#" class="text-sm text-accent" onclick="window.switchTab('login')">Masuk di sini</a>
-          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- PENDING CARD -->
+    <div class="auth-card" id="pending-card" style="display:none">
+      <div class="pending-card">
+        <i class="fa-solid fa-shield-halved" style="font-size:2.5rem;color:var(--accent3);margin-bottom:1rem"></i>
+        <h3 style="margin-bottom:.5rem">Akun Sedang Dikonfirmasi</h3>
+        <p style="font-size:.875rem;margin-bottom:1.25rem">Akun kamu sedang dalam proses konfirmasi oleh admin demi mencegah akun bodong atau akun bot. Penerimaan akan dikonfirmasi secepat-cepatnya dalam <strong>1 menit</strong>, selama-lamanya <strong>20 menit</strong>. Mohon bersabar.</p>
+
+        <div class="pending-status" id="pending-status">
+          <div class="spinner-sm" id="pend-spinner"></div>
+          <span id="pend-text">Akun Sedang Di Konfirmasi Admin</span>
         </div>
 
-        <!-- WAITING CONFIRMATION PANEL -->
-        <div class="auth-panel" id="panel-waiting">
-          <div class="confirm-status">
-            <div class="confirm-icon pending" id="confirm-icon">
-              <i class="fa-solid fa-clock" id="confirm-icon-inner"></i>
-            </div>
-            <div class="confirm-title">Menunggu Konfirmasi Admin</div>
-            <div class="confirm-desc">
-              Akun Anda sedang dikonfirmasi oleh admin demi mencegah akun bodong atau akun bot untuk masuk.
-              Penerimaan akan dikonfirmasi, secepat-cepatnya dalam kurun waktu <strong>1 menit</strong>,
-              selama-lamanya dalam kurun waktu <strong>20 menit</strong>. Mohon bersabar, jika sudah,
-              maka akun akan terdaftar dan bisa digunakan.
-            </div>
-            <div class="confirm-live" id="confirm-live">
-              <span class="realtime-dot"></span>
-              <span id="confirm-live-text">Akun Sedang Di Konfirmasi Admin...</span>
-            </div>
-            <button class="btn btn-primary w-full" id="btn-continue" onclick="window.doContinue()" style="display:none">
-              <i class="fa-solid fa-arrow-right"></i> Lanjutkan
-            </button>
-            <button class="btn btn-secondary w-full mt-8" id="btn-back-confirm" onclick="window.showBackWarning()">
-              <i class="fa-solid fa-arrow-left"></i> Kembali
-            </button>
-            <div class="back-warning" id="panel-back-warning">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              Jika Anda kembali sekarang, akun tidak dapat digunakan meskipun sudah dikonfirmasi. Apakah yakin?
-              <div style="display:flex;gap:8px;margin-top:10px;">
-                <button class="btn btn-danger btn-sm" onclick="window.doBack()">Ya, Kembali</button>
-                <button class="btn btn-secondary btn-sm" onclick="window.hideBackWarning()">Batal</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SETUP PROFILE PANEL -->
-        <div class="auth-panel" id="panel-setup">
-          <div style="text-align:center; margin-bottom:24px;">
-            <div style="font-size:18px; font-weight:800; margin-bottom:6px;">Selamat Datang!</div>
-            <div class="text-muted text-sm">Lengkapi profil Anda sebelum mulai.</div>
-          </div>
-          <!-- Avatar upload -->
-          <div style="text-align:center; margin-bottom:20px;">
-            <div style="position:relative; display:inline-block;">
-              <div class="avatar avatar-xl" id="setup-avatar-preview" style="margin:0 auto; cursor:pointer;" onclick="document.getElementById('setup-avatar-input').click()">
-                <i class="fa-solid fa-user"></i>
-              </div>
-              <div style="position:absolute;bottom:0;right:0; width:28px;height:28px; background:var(--accent); border-radius:50%; display:flex;align-items:center;justify-content:center; cursor:pointer; border:2px solid var(--bg-2);" onclick="document.getElementById('setup-avatar-input').click()">
-                <i class="fa-solid fa-camera" style="font-size:11px;color:#fff"></i>
-              </div>
-            </div>
-            <input type="file" id="setup-avatar-input" accept="image/*" style="display:none" onchange="window.previewAvatar(this)"/>
-            <div class="text-xs text-muted mt-8">Klik untuk upload foto profil</div>
-          </div>
-          <div class="input-group">
-            <label class="input-label">Nama Tampilan</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-id-badge"></i>
-              <input type="text" class="input" id="setup-display-name" placeholder="nama yang akan ditampilkan"/>
-            </div>
-          </div>
-          <div class="input-group">
-            <label class="input-label">Bio <span class="text-muted">(opsional)</span></label>
-            <textarea class="input" id="setup-bio" placeholder="Ceritakan sedikit tentang diri Anda..." rows="3"></textarea>
-          </div>
-          <div id="setup-error" class="text-danger text-sm mb-16" style="display:none"></div>
-          <button class="btn btn-primary w-full" onclick="window.doSetupProfile()">
-            <i class="fa-solid fa-check"></i> Simpan & Mulai Jelajahi
-          </button>
-        </div>
+        <button class="btn btn-primary w-full mt-2" id="btn-lanjut" disabled onclick="goSetupProfile()">
+          <i class="fa-solid fa-arrow-right"></i> Lanjutkan
+        </button>
+        <button class="btn btn-ghost w-full mt-1" onclick="confirmBack()">
+          <i class="fa-solid fa-rotate-left"></i> Kembali
+        </button>
+        <p style="font-size:.75rem;margin-top:.5rem;color:var(--text3)">Jika kembali sekarang, akun tidak dapat digunakan.</p>
       </div>
     </div>
+
+    <!-- SETUP PROFILE CARD -->
+    <div class="auth-card" id="profile-card" style="display:none">
+      <h3 style="margin-bottom:.25rem">Atur Profil Kamu</h3>
+      <p style="font-size:.85rem;margin-bottom:1.5rem">Lengkapi profil sebelum mulai menggunakan Zyvenqo.</p>
+      <form onsubmit="saveProfile(event)">
+        <div class="flex flex-col gap-2">
+          <div style="text-align:center;margin-bottom:.5rem">
+            <div style="position:relative;display:inline-block">
+              <img id="avatar-preview" src="" alt="avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;background:var(--card2);border:3px solid var(--border2);display:none">
+              <div id="avatar-placeholder" class="avatar-placeholder" style="width:80px;height:80px;font-size:1.75rem">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <label for="avatar-upload" style="position:absolute;bottom:0;right:0;width:26px;height:26px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;color:#fff">
+                <i class="fa-solid fa-camera"></i>
+              </label>
+              <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nama Tampilan</label>
+            <input class="inp" id="p-name" type="text" placeholder="Nama yang tampil di profil" maxlength="50">
+          </div>
+          <div class="form-group">
+            <label>Bio</label>
+            <textarea class="inp" id="p-bio" placeholder="Ceritakan sedikit tentang dirimu..." rows="3" maxlength="160"></textarea>
+          </div>
+          <div id="p-err" class="form-err" style="display:none"></div>
+          <button class="btn btn-primary w-full mt-1" type="submit" id="p-btn">
+            <i class="fa-solid fa-check"></i> Simpan & Mulai
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
+</div>
 
-  <div id="toast-container"></div>
+<div id="toast-container"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+<script type="module">
+import { db, Auth, Settings, uploadFile } from './db.js';
 
-  <script type="module">
-    import { supabase, registerUser, loginUser, updateUserProfile, setCurrentUser, getCurrentUser, uploadFile } from './supabase.js';
+// Theme
+const saved = localStorage.getItem('zy_theme')||'dark';
+document.documentElement.setAttribute('data-theme',saved);
 
-    // Store variables on window
-    window.pendingUserId = null;
-    window.pendingUserObj = null;
-    window.captchaChecked = false;
-    window.avatarFile = null;
-    window.confirmInterval = null;
+// Load logo
+(async()=>{
+  const logo = await Settings.get('site_logo');
+  if(logo){document.getElementById('logo-img').src=logo;document.getElementById('logo-img').style.display='block';document.getElementById('logo-icon').style.display='none';}
+})();
 
-    // Check URL param
-    const params = new URLSearchParams(location.search);
-    if (params.get('tab') === 'register') window.switchTab('register');
+// Check hash for register tab
+if(location.hash==='#register') switchTab('register');
 
-    window.switchTab = function(tab) {
-      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('tab-' + tab).classList.add('active');
-      document.getElementById('panel-' + tab).classList.add('active');
+// Already logged in?
+const me = Auth.current();
+if(me){ redirectUser(me); }
+
+let pendingUserId = null;
+let pollInterval = null;
+
+window.switchTab = function(tab){
+  document.getElementById('tab-login').classList.toggle('active',tab==='login');
+  document.getElementById('tab-register').classList.toggle('active',tab==='register');
+  document.getElementById('login-form').style.display = tab==='login'?'':'none';
+  document.getElementById('register-form').style.display = tab==='register'?'':'none';
+  if(tab==='register') genCaptcha();
+}
+
+window.togglePw = function(id,btn){
+  const inp = document.getElementById(id);
+  inp.type = inp.type==='password'?'text':'password';
+  btn.querySelector('i').className = inp.type==='password'?'fa-solid fa-eye':'fa-solid fa-eye-slash';
+}
+
+// CAPTCHA
+let captchaAnswer = 0;
+function genCaptcha(){
+  const a = Math.floor(Math.random()*20)+1;
+  const b = Math.floor(Math.random()*20)+1;
+  const ops = ['+','-','×'];
+  const op = ops[Math.floor(Math.random()*3)];
+  captchaAnswer = op==='+'?a+b:op==='-'?a-b:a*b;
+  document.getElementById('captcha-q').textContent = `${a} ${op} ${b} = ?`;
+  document.getElementById('captcha-a').value='';
+}
+genCaptcha();
+
+window.doLogin = async function(e){
+  e.preventDefault();
+  const btn=document.getElementById('l-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  const res = await Auth.login(
+    document.getElementById('l-user').value.trim(),
+    document.getElementById('l-pass').value
+  );
+  if(res.error){
+    document.getElementById('l-err').style.display='';
+    document.getElementById('l-err').textContent=res.error;
+    btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i> Masuk';
+  } else {
+    redirectUser(res.data);
+  }
+}
+
+function redirectUser(u){
+  if(u.role==='admin') location.href='admin.html';
+  else if(!u.display_name) showProfileSetup(u);
+  else location.href='dashboard.html';
+}
+
+window.doRegister = async function(e){
+  e.preventDefault();
+  const err=document.getElementById('r-err');
+  err.style.display='none';
+  const user=document.getElementById('r-user').value.trim();
+  const pass=document.getElementById('r-pass').value;
+  const pass2=document.getElementById('r-pass2').value;
+  const cap=parseInt(document.getElementById('captcha-a').value);
+  if(pass!==pass2){err.style.display='';err.textContent='Password tidak cocok';return;}
+  if(cap!==captchaAnswer){err.style.display='';err.textContent='Jawaban verifikasi salah';genCaptcha();return;}
+  const btn=document.getElementById('r-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+  const res=await Auth.register(user,pass);
+  if(res.error){
+    err.style.display='';err.textContent=res.error;
+    btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Konfirmasi Pembuatan Akun';
+    genCaptcha();
+  } else {
+    pendingUserId=res.data.id;
+    document.getElementById('auth-card').style.display='none';
+    document.getElementById('pending-card').style.display='';
+    startPolling();
+  }
+}
+
+function startPolling(){
+  pollInterval=setInterval(async()=>{
+    const {data}=await db.from('users_Zyven').select('status').eq('id',pendingUserId).single();
+    if(data&&data.status==='active'){
+      clearInterval(pollInterval);
+      const {data:full}=await db.from('users_Zyven').select('*').eq('id',pendingUserId).single();
+      sessionStorage.setItem('zy_user',JSON.stringify(full));
+      const stat=document.getElementById('pending-status');
+      stat.classList.add('confirmed');
+      stat.innerHTML='<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> <span>Akun Berhasil Dikonfirmasi!</span>';
+      document.getElementById('btn-lanjut').disabled=false;
     }
-
-    window.togglePass = function() {
-      const inp = document.getElementById('login-password');
-      const icon = document.getElementById('toggle-pass');
-      if (inp.type === 'password') {
-        inp.type = 'text';
-        icon.className = 'fa-solid fa-eye-slash';
-        icon.style.color = 'var(--text-3)';
-      } else {
-        inp.type = 'password';
-        icon.className = 'fa-solid fa-eye';
-        icon.style.color = 'var(--text-3)';
-      }
+    if(data&&data.status==='banned'){
+      clearInterval(pollInterval);
+      document.getElementById('pend-text').textContent='Akun ditolak oleh admin.';
     }
+  },5000);
+}
 
-    window.toggleCaptcha = function() {
-      window.captchaChecked = !window.captchaChecked;
-      const box = document.getElementById('captcha-box');
-      const check = document.getElementById('captcha-check');
-      const icon = check.querySelector('i');
-      if (window.captchaChecked) {
-        box.classList.add('checked');
-        icon.style.display = 'block';
-        check.style.background = 'var(--success)';
-        check.style.borderColor = 'var(--success)';
-      } else {
-        box.classList.remove('checked');
-        icon.style.display = 'none';
-        check.style.background = '';
-        check.style.borderColor = '';
-      }
-    }
+window.goSetupProfile = function(){
+  document.getElementById('pending-card').style.display='none';
+  const u=Auth.current();
+  showProfileSetup(u);
+}
 
-    window.doLogin = async function() {
-      const username = document.getElementById('login-username').value.trim();
-      const password = document.getElementById('login-password').value;
-      const errEl = document.getElementById('login-error');
-      errEl.style.display = 'none';
+function showProfileSetup(u){
+  document.getElementById('auth-card').style.display='none';
+  document.getElementById('pending-card').style.display='none';
+  document.getElementById('profile-card').style.display='';
+  if(u.display_name) document.getElementById('p-name').value=u.display_name;
+  if(u.bio) document.getElementById('p-bio').value=u.bio;
+}
 
-      if (!username || !password) { errEl.textContent = 'Isi semua kolom.'; errEl.style.display = 'block'; return; }
+window.confirmBack=function(){
+  if(confirm('Jika kembali sekarang, akun tidak dapat digunakan. Lanjutkan?')){
+    clearInterval(pollInterval);
+    location.href='index.html';
+  }
+}
 
-      const btn = document.getElementById('btn-login');
-      btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Masuk...';
+window.previewAvatar=function(inp){
+  if(inp.files[0]){
+    const r=new FileReader();
+    r.onload=e=>{
+      document.getElementById('avatar-preview').src=e.target.result;
+      document.getElementById('avatar-preview').style.display='block';
+      document.getElementById('avatar-placeholder').style.display='none';
+    };r.readAsDataURL(inp.files[0]);
+  }
+}
 
-      const { data: user, error } = await loginUser(username, password);
-
-      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Zyvenqo';
-
-      if (error || !user) {
-        errEl.textContent = 'Username atau password salah.';
-        errEl.style.display = 'block';
-        return;
-      }
-      if (user.status === 'pending') {
-        errEl.textContent = 'Akun Anda belum dikonfirmasi oleh admin.';
-        errEl.style.display = 'block';
-        return;
-      }
-      if (user.status === 'banned') {
-        errEl.textContent = 'Akun Anda telah diblokir. Hubungi admin.';
-        errEl.style.display = 'block';
-        return;
-      }
-
-      setCurrentUser(user);
-      window.showToast('Selamat datang kembali, ' + (user.display_name || user.username) + '!', 'success');
-      setTimeout(() => {
-        if (user.is_admin) { window.location.href = 'admin.html'; }
-        else { window.location.href = 'dashboard.html'; }
-      }, 800);
-    }
-
-    window.doRegister = async function() {
-      const username = document.getElementById('reg-username').value.trim();
-      const password = document.getElementById('reg-password').value;
-      const confirm = document.getElementById('reg-confirm').value;
-      const errEl = document.getElementById('reg-error');
-      errEl.style.display = 'none';
-
-      if (!username || !password || !confirm) { errEl.textContent = 'Isi semua kolom.'; errEl.style.display = 'block'; return; }
-      if (username.length < 3) { errEl.textContent = 'Username minimal 3 karakter.'; errEl.style.display = 'block'; return; }
-      if (/[^a-zA-Z0-9_]/.test(username)) { errEl.textContent = 'Username hanya boleh huruf, angka, dan underscore.'; errEl.style.display = 'block'; return; }
-      if (password.length < 6) { errEl.textContent = 'Password minimal 6 karakter.'; errEl.style.display = 'block'; return; }
-      if (password !== confirm) { errEl.textContent = 'Password tidak cocok.'; errEl.style.display = 'block'; return; }
-      if (!window.captchaChecked) { errEl.textContent = 'Selesaikan verifikasi captcha.'; errEl.style.display = 'block'; return; }
-
-      const btn = document.getElementById('btn-register');
-      btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Mendaftarkan...';
-
-      const { data: user, error } = await registerUser(username, password);
-
-      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Konfirmasi Pembuatan Akun';
-
-      if (error) {
-        if (error.message?.includes('unique')) { errEl.textContent = 'Username sudah digunakan.'; }
-        else { errEl.textContent = 'Gagal mendaftar: ' + error.message; }
-        errEl.style.display = 'block';
-        return;
-      }
-
-      window.pendingUserId = user.id;
-      window.pendingUserObj = user;
-
-      // Hide tabs
-      document.querySelectorAll('.auth-tab').forEach(t => t.style.display = 'none');
-      document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('panel-waiting').classList.add('active');
-
-      // Start polling for confirmation
-      window.startPolling(user.id);
-    }
-
-    window.startPolling = function(userId) {
-      if (window.confirmInterval) clearInterval(window.confirmInterval);
-      window.confirmInterval = setInterval(async () => {
-        const { data } = await supabase
-          .from('users_Zyvenqo')
-          .select('status')
-          .eq('id', userId)
-          .single();
-        if (data && data.status === 'active') {
-          clearInterval(window.confirmInterval);
-          // Update UI to confirmed
-          const icon = document.getElementById('confirm-icon');
-          const iconInner = document.getElementById('confirm-icon-inner');
-          const live = document.getElementById('confirm-live');
-          const liveText = document.getElementById('confirm-live-text');
-          icon.className = 'confirm-icon confirmed';
-          iconInner.className = 'fa-solid fa-circle-check';
-          live.className = 'confirm-live confirmed';
-          liveText.textContent = 'Akun Berhasil Dikonfirmasi!';
-          document.getElementById('btn-continue').style.display = 'flex';
-
-          // Update pendingUserObj
-          const { data: fullUser } = await supabase.from('users_Zyvenqo').select('*').eq('id', userId).single();
-          if (fullUser) window.pendingUserObj = fullUser;
-        }
-      }, 3000);
-    }
-
-    window.doContinue = function() {
-      if (window.confirmInterval) clearInterval(window.confirmInterval);
-      document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
-      document.getElementById('panel-setup').classList.add('active');
-      // Pre-fill display name
-      if (window.pendingUserObj) {
-        document.getElementById('setup-display-name').value = window.pendingUserObj.username;
-      }
-    }
-
-    window.showBackWarning = function() {
-      document.getElementById('panel-back-warning').classList.add('show');
-    }
-    
-    window.hideBackWarning = function() {
-      document.getElementById('panel-back-warning').classList.remove('show');
-    }
-    
-    window.doBack = function() {
-      if (window.confirmInterval) clearInterval(window.confirmInterval);
-      window.location.href = 'index.html';
-    }
-
-    window.previewAvatar = function(input) {
-      if (input.files && input.files[0]) {
-        window.avatarFile = input.files[0];
-        const reader = new FileReader();
-        reader.onload = e => {
-          const preview = document.getElementById('setup-avatar-preview');
-          preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
-        };
-        reader.readAsDataURL(input.files[0]);
-      }
-    }
-
-    window.doSetupProfile = async function() {
-      const displayName = document.getElementById('setup-display-name').value.trim();
-      const bio = document.getElementById('setup-bio').value.trim();
-      const errEl = document.getElementById('setup-error');
-      errEl.style.display = 'none';
-
-      if (!displayName) { errEl.textContent = 'Nama tampilan tidak boleh kosong.'; errEl.style.display = 'block'; return; }
-      if (!window.pendingUserId) { window.location.href = 'login.html'; return; }
-
-      let avatarUrl = '';
-      if (window.avatarFile) {
-        const { url } = await uploadFile('zyvenqo-uploads', `avatars/${window.pendingUserId}`, window.avatarFile);
-        if (url) avatarUrl = url;
-      }
-
-      const updates = { display_name: displayName, bio, avatar_url: avatarUrl };
-      const { data: updated } = await supabase
-        .from('users_Zyvenqo')
-        .update(updates)
-        .eq('id', window.pendingUserId)
-        .select()
-        .single();
-
-      if (updated) {
-        setCurrentUser(updated);
-        window.showToast('Profil tersimpan! Selamat datang di Zyvenqo.', 'success');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
-      }
-    }
-
-    // ENTER key on login
-    document.getElementById('login-password').addEventListener('keydown', e => {
-      if (e.key === 'Enter') window.doLogin();
-    });
-
-    window.showToast = function(msg, type = 'info') {
-      const c = document.getElementById('toast-container');
-      const t = document.createElement('div');
-      t.className = `toast ${type}`;
-      const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info', warning: 'fa-triangle-exclamation' };
-      t.innerHTML = `<i class="fa-solid ${icons[type]}" style="color:var(--${type === 'success' ? 'success' : type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'info'})"></i> ${msg}`;
-      c.appendChild(t);
-      setTimeout(() => t.remove(), 3500);
-    }
-  </script>
+window.saveProfile=async function(e){
+  e.preventDefault();
+  const u=Auth.current();
+  if(!u) return;
+  const btn=document.getElementById('p-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+  const name=document.getElementById('p-name').value.trim()||u.username;
+  const bio=document.getElementById('p-bio').value.trim();
+  let avatar_url=u.avatar_url||'';
+  const file=document.getElementById('avatar-upload').files[0];
+  if(file){
+    const ext=file.name.split('.').pop();
+    const url=await uploadFile('avatars',`${u.id}.${ext}`,file);
+    if(url) avatar_url=url;
+  }
+  const {error}=await db.from('users_Zyven').update({display_name:name,bio,avatar_url}).eq('id',u.id);
+  if(error){
+    document.getElementById('p-err').style.display='';
+    document.getElementById('p-err').textContent=error.message;
+    btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check"></i> Simpan & Mulai';
+  } else {
+    await Auth.refresh(u.id);
+    location.href='dashboard.html';
+  }
+}
+</script>
 </body>
 </html>
